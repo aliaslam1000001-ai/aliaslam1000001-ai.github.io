@@ -3,117 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat Mobile</title>
+    <title>Pro Chat + Emojis</title>
     <style>
-        /* --- STYLES --- */
+        /* --- THEME VARIABLES --- */
         :root {
             --bg-color: #f0f2f5; --chat-bg: #ffffff; --text-color: #1a1a1a;
             --secondary-text: #65676b; --input-bg: #f0f2f5; --msg-bg: #f0f2f5;
             --msg-text: #050505; --header-border: #e5e5e5; --accent-color: #764ba2;
+            --emoji-bg: #ffffff; --emoji-border: #ddd;
         }
         [data-theme="dark"] {
             --bg-color: #18191a; --chat-bg: #242526; --text-color: #e4e6eb;
             --secondary-text: #b0b3b8; --input-bg: #3a3b3c; --msg-bg: #3a3b3c;
             --msg-text: #e4e6eb; --header-border: #3e4042; --accent-color: #a270d6;
+            --emoji-bg: #2d2d2d; --emoji-border: #444;
         }
 
-        /* MOBILE FIX: Use 100% instead of 100vh for compatibility */
         html, body { height: 100%; margin: 0; overflow: hidden; }
         
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color); 
-            /* Fallback for old phones */
-            height: 100vh; 
-            /* New standard for mobiles (Dynamic Viewport Height) */
             height: 100dvh; 
         }
 
-        /* LOGIN SCREEN */
-        #login-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-        .login-card {
-            background: white; padding: 30px; border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 320px;
-        }
-        .login-input, .room-select {
-            width: 100%; padding: 12px; margin: 8px 0;
-            border: 1px solid #ddd; border-radius: 10px;
-            box-sizing: border-box; font-size: 16px; text-align: center; outline: none;
-        }
-        .login-btn {
-            background: #764ba2; color: white; border: none;
-            padding: 12px 30px; border-radius: 25px; font-size: 16px;
-            font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px;
-        }
+        /* LOGIN */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 320px; }
+        .login-input, .room-select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; outline: none; }
+        .login-btn { background: #764ba2; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
 
-        /* CHAT APP */
+        /* CHAT UI */
         .chat-container { 
             background: var(--chat-bg); width: 100%; max-width: 600px; 
-            /* MOBILE FIX: Ensure container fits exact screen height */
-            height: 100%; 
-            margin: 0 auto; display: flex; flex-direction: column; display: none; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            position: relative;
+            height: 100%; margin: 0 auto; display: flex; flex-direction: column; display: none; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative;
         }
         
-        header { 
-            background-color: var(--chat-bg); padding: 10px 15px; 
-            border-bottom: 1px solid var(--header-border);
-            display: flex; justify-content: space-between; align-items: center;
-            flex-shrink: 0; /* Prevent header from squishing */
-        }
+        header { background-color: var(--chat-bg); padding: 10px 15px; border-bottom: 1px solid var(--header-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         h2 { margin: 0; font-size: 16px; color: var(--text-color); }
         .room-badge { background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;}
-
-        .header-controls button, .about-btn { 
-            background: transparent; border: 1px solid var(--secondary-text); 
-            color: var(--text-color); padding: 4px 8px; border-radius: 15px; 
-            cursor: pointer; margin-left: 5px; font-size: 12px;
-        }
+        .header-controls button, .about-btn { background: transparent; border: 1px solid var(--secondary-text); color: var(--text-color); padding: 4px 8px; border-radius: 15px; cursor: pointer; margin-left: 5px; font-size: 12px; }
         .about-btn { text-decoration: none; display: inline-block; }
 
-        #messages { 
-            flex: 1; padding: 15px; overflow-y: scroll; 
-            background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 10px;
-            /* Fix scrolling on iOS */
-            -webkit-overflow-scrolling: touch; 
-        }
-        
+        #messages { flex: 1; padding: 15px; overflow-y: scroll; background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
         .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; cursor: pointer; }
         .avatar { width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; text-transform: uppercase; }
-        
         .msg-content { max-width: 85%; }
         .msg-info { font-size: 11px; color: var(--secondary-text); margin-bottom: 2px; }
-        
-        .msg-text { 
-            background: var(--msg-bg); color: var(--msg-text);
-            padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; 
-            word-wrap: break-word;
-        }
+        .msg-text { background: var(--msg-bg); color: var(--msg-text); padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .msg-text a { color: var(--accent-color); }
+        .msg-text b { color: var(--accent-color); }
+        .msg-text code { background: rgba(0,0,0,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; color: #d63384; }
         .msg-image { max-width: 100%; border-radius: 12px; margin-top: 5px; }
 
-        #typing-bar {
-            padding: 2px 15px; font-size: 12px; color: var(--accent-color);
-            font-style: italic; min-height: 18px; background: var(--chat-bg);
-            opacity: 0; transition: opacity 0.3s;
-        }
+        #typing-bar { padding: 2px 15px; font-size: 12px; color: var(--accent-color); font-style: italic; min-height: 18px; background: var(--chat-bg); opacity: 0; transition: opacity 0.3s; }
 
         .input-area { 
-            padding: 10px; background: var(--chat-bg); 
-            border-top: 1px solid var(--header-border); 
-            display: flex; gap: 8px; align-items: center;
-            /* Safety padding for iPhone X/11/12/13 etc */
-            padding-bottom: env(safe-area-inset-bottom); 
-            flex-shrink: 0; /* Prevent input from disappearing */
+            padding: 10px; background: var(--chat-bg); border-top: 1px solid var(--header-border); 
+            display: flex; gap: 8px; align-items: center; padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; position: relative;
         }
         #messageInput { flex: 1; padding: 10px; background: var(--input-bg); color: var(--text-color); border-radius: 20px; border: none; outline: none; font-size: 16px; }
         #sendBtn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 16px;}
+
+        /* --- EMOJI PICKER STYLES --- */
+        #emojiBtn { cursor: pointer; font-size: 22px; background: none; border: none; padding: 0 5px; filter: grayscale(100%); transition: 0.2s; }
+        #emojiBtn:hover { filter: grayscale(0%); transform: scale(1.1); }
+        
+        #emojiPicker {
+            position: absolute;
+            bottom: 70px; left: 10px;
+            width: 250px; height: 200px;
+            background: var(--emoji-bg);
+            border: 1px solid var(--emoji-border);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: none; /* Hidden by default */
+            grid-template-columns: repeat(6, 1fr);
+            gap: 5px; padding: 10px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        .emoji-item { font-size: 20px; cursor: pointer; text-align: center; padding: 5px; border-radius: 5px; }
+        .emoji-item:hover { background: rgba(0,0,0,0.1); }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -152,8 +124,13 @@
         <div id="typing-bar">Someone is typing...</div>
 
         <div class="input-area">
+            <div id="emojiPicker"></div>
+
             <input type="file" id="fileInput" accept="image/*" style="display:none">
-            <label for="fileInput" style="cursor:pointer; font-size:22px">📎</label>
+            <label for="fileInput" style="cursor:pointer; font-size:22px; color: #65676b">📎</label>
+            
+            <button id="emojiBtn" onclick="toggleEmojiPicker()">😀</button>
+
             <input type="text" id="messageInput" placeholder="Message...">
             <button id="sendBtn" onclick="sendMessage()">➤</button>
         </div>
@@ -186,6 +163,43 @@
 
         const savedName = localStorage.getItem("chatUsername");
         if(savedName) document.getElementById("loginNameInput").value = savedName;
+
+        // --- EMOJI LOGIC (NEW) ---
+        const emojiList = ["😀","😁","😂","🤣","😉","😊","😍","🤩","😎","🤔","🤨","😐","🙄","😴","🤢","🤮","🤧","😷","🤯","🥳","🔥","✨","❤️","👍","👎","👋","🙏","💪","👀","🎉"];
+        const picker = document.getElementById("emojiPicker");
+        
+        // Create the emoji grid
+        emojiList.forEach(emoji => {
+            const span = document.createElement("span");
+            span.className = "emoji-item";
+            span.innerText = emoji;
+            span.onclick = () => {
+                const input = document.getElementById("messageInput");
+                input.value += emoji;
+                input.focus();
+                // Trigger typing event manually
+                const event = new Event('input');
+                input.dispatchEvent(event);
+            };
+            picker.appendChild(span);
+        });
+
+        window.toggleEmojiPicker = function() {
+            if (picker.style.display === "grid") {
+                picker.style.display = "none";
+            } else {
+                picker.style.display = "grid";
+            }
+        }
+
+        // Close picker if clicking anywhere else
+        document.addEventListener('click', function(event) {
+            const isClickInside = picker.contains(event.target) || document.getElementById('emojiBtn').contains(event.target);
+            if (!isClickInside) {
+                picker.style.display = 'none';
+            }
+        });
+        // -------------------------
 
         window.toggleTheme = function() {
             const body = document.body;
@@ -233,7 +247,7 @@
                     Object.entries(data).forEach(([key, chat]) => {
                         let contentHtml = chat.type === 'image' 
                             ? `<img src="${chat.message}" class="msg-image">` 
-                            : linkify(chat.message || "");
+                            : formatMessage(chat.message || "");
 
                         const newMsg = document.createElement('div');
                         newMsg.className = 'msg';
@@ -332,16 +346,18 @@
             }
         }
 
+        function formatMessage(text) {
+            text = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+            text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+            return text;
+        }
+
         function stringToColor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
             const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
             return '#' + "00000".substring(0, 6 - c.length) + c;
-        }
-
-        function linkify(text) {
-            var urlRegex = /(https?:\/\/[^\s]+)/g;
-            return text.replace(urlRegex, url => '<a href="' + url + '" target="_blank">' + url + '</a>');
         }
 
         document.getElementById("messageInput").addEventListener("keypress", (e) => {
