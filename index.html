@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat + Emojis</title>
+    <title>Pro Chat + Avatars</title>
     <style>
         /* --- THEME VARIABLES --- */
         :root {
@@ -27,11 +27,18 @@
             height: 100dvh; 
         }
 
-        /* LOGIN */
+        /* LOGIN SCREEN */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 320px; }
+        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 340px; }
         .login-input, .room-select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; outline: none; }
         .login-btn { background: #764ba2; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
+        
+        /* AVATAR SELECTION */
+        .avatar-label { font-size: 14px; color: #666; margin-top: 10px; display: block; }
+        .avatar-options { display: flex; justify-content: center; gap: 15px; margin: 10px 0; }
+        .avatar-option { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: 0.2s; background: #f0f0f0; }
+        .avatar-option:hover { transform: scale(1.1); }
+        .avatar-option.selected { border-color: #764ba2; background: #e0d4fc; }
 
         /* CHAT UI */
         .chat-container { 
@@ -46,11 +53,14 @@
         .header-controls button, .about-btn { background: transparent; border: 1px solid var(--secondary-text); color: var(--text-color); padding: 4px 8px; border-radius: 15px; cursor: pointer; margin-left: 5px; font-size: 12px; }
         .about-btn { text-decoration: none; display: inline-block; }
 
-        #messages { flex: 1; padding: 15px; overflow-y: scroll; background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 10px; -webkit-overflow-scrolling: touch; }
+        #messages { flex: 1; padding: 15px; overflow-y: scroll; background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; }
         .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; cursor: pointer; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; text-transform: uppercase; }
-        .msg-content { max-width: 85%; }
-        .msg-info { font-size: 11px; color: var(--secondary-text); margin-bottom: 2px; }
+        
+        /* NEW AVATAR STYLE */
+        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; background: #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        .msg-content { max-width: 80%; }
+        .msg-info { font-size: 11px; color: var(--secondary-text); margin-bottom: 2px; margin-left: 2px; }
         .msg-text { background: var(--msg-bg); color: var(--msg-text); padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .msg-text a { color: var(--accent-color); }
         .msg-text b { color: var(--accent-color); }
@@ -66,23 +76,15 @@
         #messageInput { flex: 1; padding: 10px; background: var(--input-bg); color: var(--text-color); border-radius: 20px; border: none; outline: none; font-size: 16px; }
         #sendBtn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 16px;}
 
-        /* --- EMOJI PICKER STYLES --- */
+        /* EMOJI PICKER */
         #emojiBtn { cursor: pointer; font-size: 22px; background: none; border: none; padding: 0 5px; filter: grayscale(100%); transition: 0.2s; }
         #emojiBtn:hover { filter: grayscale(0%); transform: scale(1.1); }
         
         #emojiPicker {
-            position: absolute;
-            bottom: 70px; left: 10px;
-            width: 250px; height: 200px;
-            background: var(--emoji-bg);
-            border: 1px solid var(--emoji-border);
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            display: none; /* Hidden by default */
-            grid-template-columns: repeat(6, 1fr);
-            gap: 5px; padding: 10px;
-            overflow-y: auto;
-            z-index: 100;
+            position: absolute; bottom: 70px; left: 10px; width: 250px; height: 200px;
+            background: var(--emoji-bg); border: 1px solid var(--emoji-border); border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none; grid-template-columns: repeat(6, 1fr);
+            gap: 5px; padding: 10px; overflow-y: auto; z-index: 100;
         }
         .emoji-item { font-size: 20px; cursor: pointer; text-align: center; padding: 5px; border-radius: 5px; }
         .emoji-item:hover { background: rgba(0,0,0,0.1); }
@@ -94,9 +96,17 @@
 
     <div id="login-screen">
         <div class="login-card">
-            <h2>Choose a Room</h2>
+            <h2>Join Chat</h2>
             <input type="text" id="loginNameInput" class="login-input" placeholder="Your Name" autocomplete="off">
             <input type="password" id="loginPassInput" class="login-input" placeholder="Password (12345)">
+            
+            <span class="avatar-label">Choose your look:</span>
+            <div class="avatar-options">
+                <img src="https://api.dicebear.com/9.x/adventurer/svg?seed=1" class="avatar-option selected" onclick="selectStyle('adventurer', this)">
+                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=2" class="avatar-option" onclick="selectStyle('bottts', this)">
+                <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=3" class="avatar-option" onclick="selectStyle('thumbs', this)">
+            </div>
+
             <select id="roomSelect" class="room-select">
                 <option value="general">🏠 General Chat</option>
                 <option value="tech">💻 Tech Talk</option>
@@ -125,12 +135,9 @@
 
         <div class="input-area">
             <div id="emojiPicker"></div>
-
             <input type="file" id="fileInput" accept="image/*" style="display:none">
             <label for="fileInput" style="cursor:pointer; font-size:22px; color: #65676b">📎</label>
-            
             <button id="emojiBtn" onclick="toggleEmojiPicker()">😀</button>
-
             <input type="text" id="messageInput" placeholder="Message...">
             <button id="sendBtn" onclick="sendMessage()">➤</button>
         </div>
@@ -159,58 +166,22 @@
         let activeChatRef, typingRef; 
         let currentUser = "";
         let currentRoomName = "";
+        let currentAvatarStyle = "adventurer"; // Default style
         let typingTimeout;
 
+        // Auto-fill name
         const savedName = localStorage.getItem("chatUsername");
         if(savedName) document.getElementById("loginNameInput").value = savedName;
 
-        // --- EMOJI LOGIC (NEW) ---
-        const emojiList = ["😀","😁","😂","🤣","😉","😊","😍","🤩","😎","🤔","🤨","😐","🙄","😴","🤢","🤮","🤧","😷","🤯","🥳","🔥","✨","❤️","👍","👎","👋","🙏","💪","👀","🎉"];
-        const picker = document.getElementById("emojiPicker");
-        
-        // Create the emoji grid
-        emojiList.forEach(emoji => {
-            const span = document.createElement("span");
-            span.className = "emoji-item";
-            span.innerText = emoji;
-            span.onclick = () => {
-                const input = document.getElementById("messageInput");
-                input.value += emoji;
-                input.focus();
-                // Trigger typing event manually
-                const event = new Event('input');
-                input.dispatchEvent(event);
-            };
-            picker.appendChild(span);
-        });
-
-        window.toggleEmojiPicker = function() {
-            if (picker.style.display === "grid") {
-                picker.style.display = "none";
-            } else {
-                picker.style.display = "grid";
-            }
+        // --- AVATAR SELECTION LOGIC ---
+        window.selectStyle = function(style, element) {
+            currentAvatarStyle = style;
+            // Visual update
+            document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
+            element.classList.add('selected');
         }
 
-        // Close picker if clicking anywhere else
-        document.addEventListener('click', function(event) {
-            const isClickInside = picker.contains(event.target) || document.getElementById('emojiBtn').contains(event.target);
-            if (!isClickInside) {
-                picker.style.display = 'none';
-            }
-        });
-        // -------------------------
-
-        window.toggleTheme = function() {
-            const body = document.body;
-            const btn = document.getElementById("themeBtn");
-            if (body.getAttribute("data-theme") === "dark") {
-                body.removeAttribute("data-theme"); btn.innerText = "🌙";
-            } else {
-                body.setAttribute("data-theme", "dark"); btn.innerText = "☀️";
-            }
-        }
-
+        // --- ENTER ROOM ---
         window.enterChat = function() {
             const name = document.getElementById("loginNameInput").value.trim();
             const pass = document.getElementById("loginPassInput").value.trim();
@@ -248,13 +219,16 @@
                         let contentHtml = chat.type === 'image' 
                             ? `<img src="${chat.message}" class="msg-image">` 
                             : formatMessage(chat.message || "");
+                        
+                        // Fallback for old messages that don't have avatarUrl
+                        let avatarSrc = chat.avatarUrl || `https://api.dicebear.com/9.x/initials/svg?seed=${chat.name}`;
 
                         const newMsg = document.createElement('div');
                         newMsg.className = 'msg';
                         newMsg.ondblclick = () => deleteMessage(key); 
                         
                         newMsg.innerHTML = `
-                            <div class="avatar" style="background-color: ${stringToColor(chat.name)}">${chat.name.charAt(0)}</div>
+                            <img src="${avatarSrc}" class="msg-avatar">
                             <div class="msg-content">
                                 <div class="msg-info"><strong>${chat.name}</strong> • ${chat.time}</div>
                                 <div class="msg-text">${contentHtml}</div>
@@ -266,6 +240,25 @@
                     msgBox.scrollTop = msgBox.scrollHeight;
                 }
             });
+        }
+
+        // --- SEND MESSAGE (Now includes Avatar URL) ---
+        window.sendMessage = function() {
+            const text = document.getElementById("messageInput").value;
+            if(text.trim() !== "") {
+                // Generate the unique avatar URL based on style + name
+                const myAvatarUrl = `https://api.dicebear.com/9.x/${currentAvatarStyle}/svg?seed=${currentUser}`;
+
+                push(activeChatRef, {
+                    name: currentUser,
+                    message: text,
+                    type: 'text',
+                    avatarUrl: myAvatarUrl, // SAVING TO DB
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                });
+                document.getElementById("messageInput").value = "";
+                remove(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser));
+            }
         }
 
         document.getElementById("messageInput").addEventListener('input', () => {
@@ -280,33 +273,14 @@
             onValue(typingRef, (snapshot) => {
                 const data = snapshot.val();
                 const typingDiv = document.getElementById("typing-bar");
-                
                 if (data) {
                     const names = Object.keys(data).filter(name => name !== currentUser);
                     if (names.length > 0) {
                         typingDiv.innerText = names.join(", ") + " is typing...";
                         typingDiv.style.opacity = "1";
-                    } else {
-                        typingDiv.style.opacity = "0";
-                    }
-                } else {
-                    typingDiv.style.opacity = "0";
-                }
+                    } else { typingDiv.style.opacity = "0"; }
+                } else { typingDiv.style.opacity = "0"; }
             });
-        }
-
-        window.sendMessage = function() {
-            const text = document.getElementById("messageInput").value;
-            if(text.trim() !== "") {
-                push(activeChatRef, {
-                    name: currentUser,
-                    message: text,
-                    type: 'text',
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                });
-                document.getElementById("messageInput").value = "";
-                remove(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser));
-            }
         }
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -314,10 +288,12 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const myAvatarUrl = `https://api.dicebear.com/9.x/${currentAvatarStyle}/svg?seed=${currentUser}`;
                     push(activeChatRef, {
                         name: currentUser,
                         message: e.target.result,
                         type: 'image',
+                        avatarUrl: myAvatarUrl,
                         time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                     });
                 };
@@ -326,24 +302,27 @@
             }
         });
 
+        window.toggleTheme = function() {
+            const body = document.body;
+            const btn = document.getElementById("themeBtn");
+            if (body.getAttribute("data-theme") === "dark") {
+                body.removeAttribute("data-theme"); btn.innerText = "🌙";
+            } else { body.setAttribute("data-theme", "dark"); btn.innerText = "☀️"; }
+        }
+
         window.deleteMessage = function(messageId) {
             if(confirm("Delete this message?")) {
                 const password = prompt("Enter Password:");
                 if(password === ROOM_PASSWORD) {
                     remove(ref(db, 'rooms/' + currentRoomName + '/messages/' + messageId));
-                } else {
-                    alert("Wrong password");
-                }
+                } else { alert("Wrong password"); }
             }
         }
 
         window.clearChat = function() {
             const password = prompt("ADMIN: Clear ALL messages in this room?");
-            if(password === ROOM_PASSWORD) {
-                set(activeChatRef, null); 
-            } else if (password !== null) {
-                alert("Wrong Password");
-            }
+            if(password === ROOM_PASSWORD) { set(activeChatRef, null); } 
+            else if (password !== null) { alert("Wrong Password"); }
         }
 
         function formatMessage(text) {
@@ -353,12 +332,29 @@
             return text;
         }
 
-        function stringToColor(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
-            return '#' + "00000".substring(0, 6 - c.length) + c;
+        // --- EMOJI PICKER LOGIC ---
+        const emojiList = ["😀","😁","😂","🤣","😉","😊","😍","🤩","😎","🤔","🤨","😐","🙄","😴","🤢","🤮","🤧","😷","🤯","🥳","🔥","✨","❤️","👍","👎","👋","🙏","💪","👀","🎉"];
+        const picker = document.getElementById("emojiPicker");
+        emojiList.forEach(emoji => {
+            const span = document.createElement("span");
+            span.className = "emoji-item";
+            span.innerText = emoji;
+            span.onclick = () => {
+                const input = document.getElementById("messageInput");
+                input.value += emoji;
+                input.focus();
+                const event = new Event('input');
+                input.dispatchEvent(event);
+            };
+            picker.appendChild(span);
+        });
+        window.toggleEmojiPicker = function() {
+            picker.style.display = (picker.style.display === "grid") ? "none" : "grid";
         }
+        document.addEventListener('click', function(event) {
+            const isClickInside = picker.contains(event.target) || document.getElementById('emojiBtn').contains(event.target);
+            if (!isClickInside) picker.style.display = 'none';
+        });
 
         document.getElementById("messageInput").addEventListener("keypress", (e) => {
             if(e.key === "Enter") sendMessage();
