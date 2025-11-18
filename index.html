@@ -3,47 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Personal Chatbox</title>
+    <title>Multi-Room Chat</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .chat-container { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 80vh; }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        #messages { flex: 1; border: 1px solid #ddd; border-radius: 5px; overflow-y: scroll; padding: 10px; margin-bottom: 15px; background-color: #fafafa; }
-        .msg { padding: 8px; margin-bottom: 5px; border-radius: 5px; background-color: #e1ffc7; width: fit-content; max-width: 80%; }
-        .input-group { display: flex; gap: 10px; }
-        input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        #username { width: 30%; }
-        #messageInput { flex: 1; }
-        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
+        /* --- STYLES --- */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5; height: 100vh; margin: 0; overflow: hidden; 
+        }
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; transition: opacity 0.5s ease;
+        }
+
+        .login-card {
+            background: white; padding: 40px; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 320px;
+        }
+
+        .login-input, .room-select {
+            width: 100%; padding: 12px; margin: 8px 0;
+            border: 1px solid #ddd; border-radius: 10px;
+            box-sizing: border-box; font-size: 16px; text-align: center; outline: none;
+        }
+        
+        .login-btn {
+            background: #764ba2; color: white; border: none;
+            padding: 12px 30px; border-radius: 25px; font-size: 16px;
+            font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px;
+        }
+
+        /* CHAT APP */
+        .chat-container { 
+            background: white; width: 100%; max-width: 600px; height: 100vh; 
+            margin: 0 auto; display: flex; flex-direction: column; display: none; 
+        }
+        
+        header { 
+            background-color: white; padding: 15px 20px; border-bottom: 1px solid #e5e5e5;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        h2 { margin: 0; font-size: 18px; color: #333; }
+        .room-badge { background: #764ba2; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+
+        .clear-btn { background: white; color: #dc3545; border: 1px solid #dc3545; padding: 5px 10px; border-radius: 15px; cursor: pointer; }
+
+        /* New Style for the About Button */
+        .about-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-size: 14px; }
+        .about-btn:hover { background: #f0f0f0; }
+
+        #messages { flex: 1; padding: 20px; overflow-y: scroll; background-color: #ffffff; display: flex; flex-direction: column; gap: 12px; }
+        
+        .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; flex-shrink: 0; text-transform: uppercase; }
+        .msg-text { background: #f0f2f5; padding: 10px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; }
+        .msg-text a { color: #0084ff; }
+        .msg-image { max-width: 100%; border-radius: 12px; margin-top: 5px; }
+
+        .input-area { padding: 15px; background: white; border-top: 1px solid #e5e5e5; display: flex; gap: 10px; align-items: center; }
+        #messageInput { flex: 1; padding: 12px; background: #f0f2f5; border-radius: 25px; border: none; outline: none; }
+        #sendBtn { background: #764ba2; color: white; border: none; padding: 10px 24px; border-radius: 25px; cursor: pointer; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <h2>Global Chat</h2>
-        
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>Choose a Room</h2>
+            
+            <input type="text" id="loginNameInput" class="login-input" placeholder="Your Name" autocomplete="off">
+            <input type="password" id="loginPassInput" class="login-input" placeholder="Password (12345)">
+            
+            <select id="roomSelect" class="room-select">
+                <option value="general">🏠 General Chat</option>
+                <option value="tech">💻 Tech Talk</option>
+                <option value="it">🔌 IT Support</option>
+                <option value="random">🎲 Random</option>
+            </select>
+            
+            <button class="login-btn" onclick="enterChat()">Join Room</button>
+        </div>
+    </div>
+
+    <div class="chat-container" id="chatInterface">
+        <header>
+            <div>
+                <h2 id="headerTitle">Chat</h2>
+                <span id="currentRoomBadge" class="room-badge">General</span>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <a href="about.html" style="text-decoration: none;">
+                    <button class="about-btn" title="About Page">ℹ️</button>
+                </a>
+                <button class="clear-btn" onclick="clearChat()">Clear History</button>
+            </div>
+        </header>
+
         <div id="messages"></div>
 
-        <div class="input-group">
-            <input type="text" id="username" placeholder="Name">
+        <div class="input-area">
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+            <label for="fileInput" style="cursor:pointer; font-size:20px">📎</label>
             <input type="text" id="messageInput" placeholder="Type a message...">
-            <button onclick="sendMessage()">Send</button>
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
         </div>
     </div>
 
     <script type="module">
-        // 1. Import Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
-        // 2. YOUR SPECIFIC CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
             authDomain: "mypersonalchatboxapp.firebaseapp.com",
-            // I added the databaseURL below because it was missing. 
-            // If the chat doesn't work, check this URL in your Firebase Console.
-            databaseURL: "https://mypersonalchatboxapp-default-rtdb.firebaseio.com", 
+            databaseURL: "https://mypersonalchatboxapp-default-rtdb.firebaseio.com",
             projectId: "mypersonalchatboxapp",
             storageBucket: "mypersonalchatboxapp.firebasestorage.app",
             messagingSenderId: "290120332790",
@@ -51,51 +130,136 @@
             measurementId: "G-0695T29ZT6"
         };
 
-        // 3. Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const chatRef = ref(db, 'chats');
+        const sound = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
+        
+        const ROOM_PASSWORD = "12345"; 
+        
+        // State Variables
+        let activeChatRef; 
+        let currentUser = "";
+        let currentRoomName = "";
 
-        // 4. Send Message Function
+        // Auto-fill name
+        const savedName = localStorage.getItem("chatUsername");
+        if(savedName) document.getElementById("loginNameInput").value = savedName;
+
+        // --- ENTER ROOM LOGIC ---
+        window.enterChat = function() {
+            const name = document.getElementById("loginNameInput").value.trim();
+            const pass = document.getElementById("loginPassInput").value.trim();
+            const room = document.getElementById("roomSelect").value; // Get selected room
+
+            if(!name) return alert("Name required!");
+            if(pass !== ROOM_PASSWORD) return alert("Wrong Password!");
+
+            // Save User Info
+            currentUser = name;
+            localStorage.setItem("chatUsername", name);
+            currentRoomName = room;
+
+            // Update UI
+            document.getElementById("headerTitle").innerText = name + "'s Chat";
+            document.getElementById("currentRoomBadge").innerText = room.toUpperCase();
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("chatInterface").style.display = "flex";
+
+            // --- CONNECT TO SPECIFIC ROOM DATABASE FOLDER ---
+            // This is the magic line. It connects to 'rooms/tech' or 'rooms/general'
+            activeChatRef = ref(db, 'rooms/' + room);
+
+            // Start Listening for Messages in THIS room
+            loadMessages();
+        }
+
+        function loadMessages() {
+            onValue(activeChatRef, (snapshot) => {
+                const msgBox = document.getElementById("messages");
+                msgBox.innerHTML = ""; 
+                
+                const data = snapshot.val();
+                if(data) {
+                    Object.values(data).forEach(chat => {
+                        let contentHtml = chat.type === 'image' 
+                            ? `<img src="${chat.message}" class="msg-image">` 
+                            : linkify(chat.message || "");
+
+                        const newMsg = document.createElement('div');
+                        newMsg.className = 'msg';
+                        newMsg.innerHTML = `
+                            <div class="avatar" style="background-color: ${stringToColor(chat.name)}">${chat.name.charAt(0)}</div>
+                            <div>
+                                <div style="font-size:12px; color:#888"><strong>${chat.name}</strong> • ${chat.time}</div>
+                                <div class="msg-text">${contentHtml}</div>
+                            </div>
+                        `;
+                        msgBox.appendChild(newMsg);
+                    });
+                    sound.play().catch(e=>{});
+                    msgBox.scrollTop = msgBox.scrollHeight;
+                }
+            });
+        }
+
+        // --- SEND MESSAGE ---
         window.sendMessage = function() {
-            const user = document.getElementById("username").value;
             const text = document.getElementById("messageInput").value;
-
-            if(user && text) {
-                push(chatRef, {
-                    name: user,
+            if(text.trim() !== "") {
+                push(activeChatRef, {
+                    name: currentUser,
                     message: text,
-                    time: new Date().toLocaleTimeString()
+                    type: 'text',
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 });
-                document.getElementById("messageInput").value = ""; // Clear input
-            } else {
-                alert("Please enter your name and a message!");
+                document.getElementById("messageInput").value = "";
             }
         }
 
-        // 5. Receive Message Function (Listens for new messages)
-        onChildAdded(chatRef, (data) => {
-            const chatMsg = data.val();
-            const msgBox = document.getElementById("messages");
-            
-            // Create message HTML
-            const newMsg = document.createElement('div');
-            newMsg.className = 'msg';
-            newMsg.innerHTML = `<strong>${chatMsg.name}:</strong> ${chatMsg.message}`;
-            
-            msgBox.appendChild(newMsg);
-            
-            // Auto-scroll to bottom
-            msgBox.scrollTop = msgBox.scrollHeight;
-        });
-
-        // Allow pressing "Enter" to send
-        document.getElementById("messageInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                sendMessage();
+        // --- SEND IMAGE ---
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    push(activeChatRef, {
+                        name: currentUser,
+                        message: e.target.result,
+                        type: 'image',
+                        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+                    });
+                };
+                reader.readAsDataURL(file);
+                e.target.value = ''; 
             }
         });
-    </script>
 
+        // --- CLEAR CURRENT ROOM ONLY ---
+        window.clearChat = function() {
+            const password = prompt("Enter Admin Password to Clear THIS Room:");
+            if(password === ROOM_PASSWORD) {
+                set(activeChatRef, null); // Only clears the active folder
+            } else if (password !== null) {
+                alert("Wrong Password");
+            }
+        }
+
+        // Helpers
+        function stringToColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+            return '#' + "00000".substring(0, 6 - c.length) + c;
+        }
+
+        function linkify(text) {
+            var urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, url => '<a href="' + url + '" target="_blank">' + url + '</a>');
+        }
+
+        document.getElementById("messageInput").addEventListener("keypress", (e) => {
+            if(e.key === "Enter") sendMessage();
+        });
+    </script>
 </body>
 </html>
