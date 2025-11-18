@@ -2,13 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Room Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Chat Mobile</title>
     <style>
         /* --- STYLES --- */
+        :root {
+            --bg-color: #f0f2f5; --chat-bg: #ffffff; --text-color: #1a1a1a;
+            --secondary-text: #65676b; --input-bg: #f0f2f5; --msg-bg: #f0f2f5;
+            --msg-text: #050505; --header-border: #e5e5e5; --accent-color: #764ba2;
+        }
+        [data-theme="dark"] {
+            --bg-color: #18191a; --chat-bg: #242526; --text-color: #e4e6eb;
+            --secondary-text: #b0b3b8; --input-bg: #3a3b3c; --msg-bg: #3a3b3c;
+            --msg-text: #e4e6eb; --header-border: #3e4042; --accent-color: #a270d6;
+        }
+
+        /* MOBILE FIX: Use 100% instead of 100vh for compatibility */
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5; height: 100vh; margin: 0; overflow: hidden; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color); 
+            /* Fallback for old phones */
+            height: 100vh; 
+            /* New standard for mobiles (Dynamic Viewport Height) */
+            height: 100dvh; 
         }
 
         /* LOGIN SCREEN */
@@ -16,20 +34,17 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex; justify-content: center; align-items: center;
-            z-index: 1000; transition: opacity 0.5s ease;
+            z-index: 1000;
         }
-
         .login-card {
-            background: white; padding: 40px; border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 320px;
+            background: white; padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 320px;
         }
-
         .login-input, .room-select {
             width: 100%; padding: 12px; margin: 8px 0;
             border: 1px solid #ddd; border-radius: 10px;
             box-sizing: border-box; font-size: 16px; text-align: center; outline: none;
         }
-        
         .login-btn {
             background: #764ba2; color: white; border: none;
             padding: 12px 30px; border-radius: 25px; font-size: 16px;
@@ -38,34 +53,67 @@
 
         /* CHAT APP */
         .chat-container { 
-            background: white; width: 100%; max-width: 600px; height: 100vh; 
+            background: var(--chat-bg); width: 100%; max-width: 600px; 
+            /* MOBILE FIX: Ensure container fits exact screen height */
+            height: 100%; 
             margin: 0 auto; display: flex; flex-direction: column; display: none; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
         }
         
         header { 
-            background-color: white; padding: 15px 20px; border-bottom: 1px solid #e5e5e5;
+            background-color: var(--chat-bg); padding: 10px 15px; 
+            border-bottom: 1px solid var(--header-border);
             display: flex; justify-content: space-between; align-items: center;
+            flex-shrink: 0; /* Prevent header from squishing */
         }
-        h2 { margin: 0; font-size: 18px; color: #333; }
-        .room-badge { background: #764ba2; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        h2 { margin: 0; font-size: 16px; color: var(--text-color); }
+        .room-badge { background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;}
 
-        .clear-btn { background: white; color: #dc3545; border: 1px solid #dc3545; padding: 5px 10px; border-radius: 15px; cursor: pointer; }
+        .header-controls button, .about-btn { 
+            background: transparent; border: 1px solid var(--secondary-text); 
+            color: var(--text-color); padding: 4px 8px; border-radius: 15px; 
+            cursor: pointer; margin-left: 5px; font-size: 12px;
+        }
+        .about-btn { text-decoration: none; display: inline-block; }
 
-        /* New Style for the About Button */
-        .about-btn { background: white; border: 1px solid #ccc; padding: 5px 10px; border-radius: 15px; cursor: pointer; font-size: 14px; }
-        .about-btn:hover { background: #f0f0f0; }
-
-        #messages { flex: 1; padding: 20px; overflow-y: scroll; background-color: #ffffff; display: flex; flex-direction: column; gap: 12px; }
+        #messages { 
+            flex: 1; padding: 15px; overflow-y: scroll; 
+            background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 10px;
+            /* Fix scrolling on iOS */
+            -webkit-overflow-scrolling: touch; 
+        }
         
-        .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; }
-        .avatar { width: 36px; height: 36px; border-radius: 50%; margin-right: 10px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; flex-shrink: 0; text-transform: uppercase; }
-        .msg-text { background: #f0f2f5; padding: 10px 16px; border-radius: 18px; font-size: 15px; line-height: 1.5; }
-        .msg-text a { color: #0084ff; }
+        .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; cursor: pointer; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; margin-right: 8px; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; text-transform: uppercase; }
+        
+        .msg-content { max-width: 85%; }
+        .msg-info { font-size: 11px; color: var(--secondary-text); margin-bottom: 2px; }
+        
+        .msg-text { 
+            background: var(--msg-bg); color: var(--msg-text);
+            padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; 
+            word-wrap: break-word;
+        }
+        .msg-text a { color: var(--accent-color); }
         .msg-image { max-width: 100%; border-radius: 12px; margin-top: 5px; }
 
-        .input-area { padding: 15px; background: white; border-top: 1px solid #e5e5e5; display: flex; gap: 10px; align-items: center; }
-        #messageInput { flex: 1; padding: 12px; background: #f0f2f5; border-radius: 25px; border: none; outline: none; }
-        #sendBtn { background: #764ba2; color: white; border: none; padding: 10px 24px; border-radius: 25px; cursor: pointer; }
+        #typing-bar {
+            padding: 2px 15px; font-size: 12px; color: var(--accent-color);
+            font-style: italic; min-height: 18px; background: var(--chat-bg);
+            opacity: 0; transition: opacity 0.3s;
+        }
+
+        .input-area { 
+            padding: 10px; background: var(--chat-bg); 
+            border-top: 1px solid var(--header-border); 
+            display: flex; gap: 8px; align-items: center;
+            /* Safety padding for iPhone X/11/12/13 etc */
+            padding-bottom: env(safe-area-inset-bottom); 
+            flex-shrink: 0; /* Prevent input from disappearing */
+        }
+        #messageInput { flex: 1; padding: 10px; background: var(--input-bg); color: var(--text-color); border-radius: 20px; border: none; outline: none; font-size: 16px; }
+        #sendBtn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 16px;}
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -75,49 +123,45 @@
     <div id="login-screen">
         <div class="login-card">
             <h2>Choose a Room</h2>
-            
             <input type="text" id="loginNameInput" class="login-input" placeholder="Your Name" autocomplete="off">
             <input type="password" id="loginPassInput" class="login-input" placeholder="Password (12345)">
-            
             <select id="roomSelect" class="room-select">
                 <option value="general">🏠 General Chat</option>
                 <option value="tech">💻 Tech Talk</option>
                 <option value="it">🔌 IT Support</option>
-                <option value="random">🎲 Random</option>
+                <option value="gaming">🎮 Gaming</option>
             </select>
-            
             <button class="login-btn" onclick="enterChat()">Join Room</button>
         </div>
     </div>
 
     <div class="chat-container" id="chatInterface">
         <header>
-            <div>
+            <div style="display: flex; flex-direction: column;">
                 <h2 id="headerTitle">Chat</h2>
                 <span id="currentRoomBadge" class="room-badge">General</span>
             </div>
-            
-            <div style="display: flex; gap: 10px;">
-                <a href="about.html" style="text-decoration: none;">
-                    <button class="about-btn" title="About Page">ℹ️</button>
-                </a>
-                <button class="clear-btn" onclick="clearChat()">Clear History</button>
+            <div class="header-controls">
+                <a href="about.html" style="text-decoration:none;"><button class="about-btn">ℹ️</button></a>
+                <button onclick="toggleTheme()" id="themeBtn">🌙</button>
+                <button onclick="clearChat()" style="color:#dc3545; border-color:#dc3545">🗑️</button>
             </div>
         </header>
 
         <div id="messages"></div>
+        <div id="typing-bar">Someone is typing...</div>
 
         <div class="input-area">
             <input type="file" id="fileInput" accept="image/*" style="display:none">
-            <label for="fileInput" style="cursor:pointer; font-size:20px">📎</label>
-            <input type="text" id="messageInput" placeholder="Type a message...">
-            <button id="sendBtn" onclick="sendMessage()">Send</button>
+            <label for="fileInput" style="cursor:pointer; font-size:22px">📎</label>
+            <input type="text" id="messageInput" placeholder="Message...">
+            <button id="sendBtn" onclick="sendMessage()">➤</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-        import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
@@ -133,64 +177,72 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const sound = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
-        
         const ROOM_PASSWORD = "12345"; 
         
-        // State Variables
-        let activeChatRef; 
+        let activeChatRef, typingRef; 
         let currentUser = "";
         let currentRoomName = "";
+        let typingTimeout;
 
-        // Auto-fill name
         const savedName = localStorage.getItem("chatUsername");
         if(savedName) document.getElementById("loginNameInput").value = savedName;
 
-        // --- ENTER ROOM LOGIC ---
+        window.toggleTheme = function() {
+            const body = document.body;
+            const btn = document.getElementById("themeBtn");
+            if (body.getAttribute("data-theme") === "dark") {
+                body.removeAttribute("data-theme"); btn.innerText = "🌙";
+            } else {
+                body.setAttribute("data-theme", "dark"); btn.innerText = "☀️";
+            }
+        }
+
         window.enterChat = function() {
             const name = document.getElementById("loginNameInput").value.trim();
             const pass = document.getElementById("loginPassInput").value.trim();
-            const room = document.getElementById("roomSelect").value; // Get selected room
+            const room = document.getElementById("roomSelect").value;
 
             if(!name) return alert("Name required!");
             if(pass !== ROOM_PASSWORD) return alert("Wrong Password!");
 
-            // Save User Info
             currentUser = name;
             localStorage.setItem("chatUsername", name);
             currentRoomName = room;
 
-            // Update UI
-            document.getElementById("headerTitle").innerText = name + "'s Chat";
+            document.getElementById("headerTitle").innerText = name;
             document.getElementById("currentRoomBadge").innerText = room.toUpperCase();
             document.getElementById("login-screen").style.display = "none";
             document.getElementById("chatInterface").style.display = "flex";
 
-            // --- CONNECT TO SPECIFIC ROOM DATABASE FOLDER ---
-            // This is the magic line. It connects to 'rooms/tech' or 'rooms/general'
-            activeChatRef = ref(db, 'rooms/' + room);
+            activeChatRef = ref(db, 'rooms/' + room + '/messages');
+            typingRef = ref(db, 'rooms/' + room + '/typing');
 
-            // Start Listening for Messages in THIS room
+            const myTypingRef = ref(db, 'rooms/' + room + '/typing/' + name);
+            onDisconnect(myTypingRef).remove();
+
             loadMessages();
+            setupTypingListener();
         }
 
         function loadMessages() {
             onValue(activeChatRef, (snapshot) => {
                 const msgBox = document.getElementById("messages");
                 msgBox.innerHTML = ""; 
-                
                 const data = snapshot.val();
                 if(data) {
-                    Object.values(data).forEach(chat => {
+                    Object.entries(data).forEach(([key, chat]) => {
                         let contentHtml = chat.type === 'image' 
                             ? `<img src="${chat.message}" class="msg-image">` 
                             : linkify(chat.message || "");
 
                         const newMsg = document.createElement('div');
                         newMsg.className = 'msg';
+                        newMsg.ondblclick = () => deleteMessage(key); 
+                        
                         newMsg.innerHTML = `
                             <div class="avatar" style="background-color: ${stringToColor(chat.name)}">${chat.name.charAt(0)}</div>
-                            <div>
-                                <div style="font-size:12px; color:#888"><strong>${chat.name}</strong> • ${chat.time}</div>
+                            <div class="msg-content">
+                                <div class="msg-info"><strong>${chat.name}</strong> • ${chat.time}</div>
                                 <div class="msg-text">${contentHtml}</div>
                             </div>
                         `;
@@ -202,7 +254,33 @@
             });
         }
 
-        // --- SEND MESSAGE ---
+        document.getElementById("messageInput").addEventListener('input', () => {
+            set(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser), true);
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                remove(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser));
+            }, 2000);
+        });
+
+        function setupTypingListener() {
+            onValue(typingRef, (snapshot) => {
+                const data = snapshot.val();
+                const typingDiv = document.getElementById("typing-bar");
+                
+                if (data) {
+                    const names = Object.keys(data).filter(name => name !== currentUser);
+                    if (names.length > 0) {
+                        typingDiv.innerText = names.join(", ") + " is typing...";
+                        typingDiv.style.opacity = "1";
+                    } else {
+                        typingDiv.style.opacity = "0";
+                    }
+                } else {
+                    typingDiv.style.opacity = "0";
+                }
+            });
+        }
+
         window.sendMessage = function() {
             const text = document.getElementById("messageInput").value;
             if(text.trim() !== "") {
@@ -213,10 +291,10 @@
                     time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
                 });
                 document.getElementById("messageInput").value = "";
+                remove(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser));
             }
         }
 
-        // --- SEND IMAGE ---
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -234,17 +312,26 @@
             }
         });
 
-        // --- CLEAR CURRENT ROOM ONLY ---
+        window.deleteMessage = function(messageId) {
+            if(confirm("Delete this message?")) {
+                const password = prompt("Enter Password:");
+                if(password === ROOM_PASSWORD) {
+                    remove(ref(db, 'rooms/' + currentRoomName + '/messages/' + messageId));
+                } else {
+                    alert("Wrong password");
+                }
+            }
+        }
+
         window.clearChat = function() {
-            const password = prompt("Enter Admin Password to Clear THIS Room:");
+            const password = prompt("ADMIN: Clear ALL messages in this room?");
             if(password === ROOM_PASSWORD) {
-                set(activeChatRef, null); // Only clears the active folder
+                set(activeChatRef, null); 
             } else if (password !== null) {
                 alert("Wrong Password");
             }
         }
 
-        // Helpers
         function stringToColor(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
