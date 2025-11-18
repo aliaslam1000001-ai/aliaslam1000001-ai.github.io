@@ -3,84 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Admin Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Admin Dashboard</title>
     <style>
-        body { background-color: #f8f9fa; padding: 20px; }
-        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .delete-btn { cursor: pointer; color: white; }
+        body { font-family: sans-serif; background-color: #1e1e1e; color: #fff; padding: 20px; }
+        
+        h1 { text-align: center; color: #ff5555; }
+        
+        .container { max-width: 900px; margin: 0 auto; background: #2d2d2d; padding: 20px; border-radius: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background-color: #333; color: #aaa; }
+        
+        .btn-delete { 
+            background-color: #ff5555; color: white; border: none; 
+            padding: 5px 10px; cursor: pointer; border-radius: 5px; 
+        }
+        .btn-delete:hover { background-color: #d00000; }
+
+        .nav-btn { background: #555; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; display: inline-block; margin-bottom: 20px;}
+
+        /* Badge for Room Name */
+        .badge { padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; background: #764ba2; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>🛠️ Admin Dashboard</h1>
-            <a href="/" class="btn btn-outline-primary">Back to Chat</a>
-        </div>
+        <a href="index.html" class="nav-btn">⬅ Back to Chat</a>
+        <h1>🛠️ Master Admin Panel</h1>
+        <p>Manage messages across all rooms.</p>
 
-        <p class="text-muted">Manage all messages sent in the application.</p>
-
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Room</th>
-                        <th>User</th>
-                        <th>Message</th>
-                        <th>Time</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="messageTableBody">
-                    </tbody>
-            </table>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Room</th>
+                    <th>User</th>
+                    <th>Message</th>
+                    <th>Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
     </div>
 
-    <script>
-        // 1. Simple Password Protection (Basic)
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+        // --- YOUR FIREBASE CONFIG ---
+        // (I pre-filled this based on your previous messages)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
+            authDomain: "mypersonalchatboxapp.firebaseapp.com",
+            databaseURL: "https://mypersonalchatboxapp-default-rtdb.firebaseio.com",
+            projectId: "mypersonalchatboxapp",
+            storageBucket: "mypersonalchatboxapp.firebasestorage.app",
+            messagingSenderId: "290120332790",
+            appId: "1:290120332790:web:14e0487f7d37b5e404c3d7",
+            measurementId: "G-0695T29ZT6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const ROOM_PASSWORD = "admin123";
+
+        // 1. SECURITY CHECK
         const password = prompt("Enter Admin Password:");
-        if (password !== "admin123") {
-            alert("Access Denied!");
-            window.location.href = "/"; // Send them back to home
-        } else {
-            // If password is correct, load data
-            loadMessages();
+        if(password !== ROOM_PASSWORD) {
+            document.body.innerHTML = "<h1 style='text-align:center; margin-top:50px;'>⛔ ACCESS DENIED</h1>";
+            throw new Error("Wrong Password");
         }
 
-        // 2. Function to Fetch Messages from Server
-        async function loadMessages() {
-            const response = await fetch('/api/messages');
-            const messages = await response.json();
+        // 2. LOAD ALL DATA
+        const roomsRef = ref(db, 'rooms');
+
+        onValue(roomsRef, (snapshot) => {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ''; // Clear table
             
-            const tbody = document.getElementById('messageTableBody');
-            tbody.innerHTML = ''; // Clear current list
+            const data = snapshot.val();
+            
+            if (data) {
+                // Loop through Rooms (General, Tech, etc.)
+                Object.keys(data).forEach(roomName => {
+                    const roomData = data[roomName];
+                    
+                    // Check if room has messages
+                    if (roomData.messages) {
+                        // Loop through Messages in that room
+                        Object.entries(roomData.messages).forEach(([msgId, msgData]) => {
+                            
+                            const row = document.createElement('tr');
+                            
+                            let content = msgData.type === 'image' ? '[Image Attachment]' : msgData.message;
 
-            messages.forEach(msg => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${msg.id}</td>
-                    <td><span class="badge bg-info text-dark">${msg.room}</span></td>
-                    <td><strong>${msg.user}</strong></td>
-                    <td>${msg.text}</td>
-                    <td>${new Date(msg.timestamp).toLocaleString()}</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" onclick="deleteMessage(${msg.id})">Delete</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
+                            row.innerHTML = `
+                                <td><span class="badge">${roomName.toUpperCase()}</span></td>
+                                <td><strong>${msgData.name}</strong></td>
+                                <td style="color: #ccc;">${content}</td>
+                                <td>${msgData.time}</td>
+                                <td>
+                                    <button class="btn-delete" onclick="deleteMsg('${roomName}', '${msgId}')">Delete</button>
+                                </td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                });
+            } else {
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center'>No messages found in database.</td></tr>";
+            }
+        });
 
-        // 3. Function to Delete a Message
-        async function deleteMessage(id) {
-            if(confirm("Are you sure you want to permanently delete this message?")) {
-                await fetch(`/api/messages/${id}`, { method: 'DELETE' });
-                loadMessages(); // Refresh the list
+        // 3. DELETE FUNCTION (Global Scope)
+        window.deleteMsg = function(roomName, msgId) {
+            if(confirm("Are you sure you want to delete this message?")) {
+                const messageRef = ref(db, `rooms/${roomName}/messages/${msgId}`);
+                remove(messageRef)
+                    .then(() => console.log("Deleted"))
+                    .catch((err) => alert("Error: " + err.message));
             }
         }
     </script>
+
 </body>
 </html>
