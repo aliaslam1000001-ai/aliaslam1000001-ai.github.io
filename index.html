@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Personal Chatbox</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { background: white; width: 100%; max-width: 500px; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; height: 80vh; }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        #messages { flex: 1; border: 1px solid #ddd; border-radius: 5px; overflow-y: scroll; padding: 10px; margin-bottom: 15px; background-color: #fafafa; }
+        .msg { padding: 8px; margin-bottom: 5px; border-radius: 5px; background-color: #e1ffc7; width: fit-content; max-width: 80%; }
+        .input-group { display: flex; gap: 10px; }
+        input { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        #username { width: 30%; }
+        #messageInput { flex: 1; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <h2>Global Chat</h2>
+        
+        <div id="messages"></div>
+
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Name">
+            <input type="text" id="messageInput" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // 1. Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+        // 2. YOUR SPECIFIC CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
+            authDomain: "mypersonalchatboxapp.firebaseapp.com",
+            // I added the databaseURL below because it was missing. 
+            // If the chat doesn't work, check this URL in your Firebase Console.
+            databaseURL: "https://mypersonalchatboxapp-default-rtdb.firebaseio.com", 
+            projectId: "mypersonalchatboxapp",
+            storageBucket: "mypersonalchatboxapp.firebasestorage.app",
+            messagingSenderId: "290120332790",
+            appId: "1:290120332790:web:14e0487f7d37b5e404c3d7",
+            measurementId: "G-0695T29ZT6"
+        };
+
+        // 3. Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const chatRef = ref(db, 'chats');
+
+        // 4. Send Message Function
+        window.sendMessage = function() {
+            const user = document.getElementById("username").value;
+            const text = document.getElementById("messageInput").value;
+
+            if(user && text) {
+                push(chatRef, {
+                    name: user,
+                    message: text,
+                    time: new Date().toLocaleTimeString()
+                });
+                document.getElementById("messageInput").value = ""; // Clear input
+            } else {
+                alert("Please enter your name and a message!");
+            }
+        }
+
+        // 5. Receive Message Function (Listens for new messages)
+        onChildAdded(chatRef, (data) => {
+            const chatMsg = data.val();
+            const msgBox = document.getElementById("messages");
+            
+            // Create message HTML
+            const newMsg = document.createElement('div');
+            newMsg.className = 'msg';
+            newMsg.innerHTML = `<strong>${chatMsg.name}:</strong> ${chatMsg.message}`;
+            
+            msgBox.appendChild(newMsg);
+            
+            // Auto-scroll to bottom
+            msgBox.scrollTop = msgBox.scrollHeight;
+        });
+
+        // Allow pressing "Enter" to send
+        document.getElementById("messageInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+
+</body>
+</html>
