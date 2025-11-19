@@ -160,6 +160,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
         import { getDatabase, ref, push, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
+        // ----------------------------------------------------
+        // 🔑 CRITICAL: ENSURE THESE CREDENTIALS ARE CORRECT
+        // ----------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
             authDomain: "mypersonalchatboxapp.firebaseapp.com",
@@ -181,7 +184,7 @@
         let currentRoomName = "";
         let currentAvatarStyle = "adventurer";
         let typingTimeout;
-        let blockedWords = []; // List of words to block
+        let blockedWords = []; 
         
         const loginNameInput = document.getElementById("loginNameInput");
         const loginPassInput = document.getElementById("loginPassInput");
@@ -202,7 +205,7 @@
             element.classList.add('selected');
         }
 
-        // --- ATTEMPT LOGIN (NEW: Enforces Ban and Maintenance Mode) ---
+        // --- ATTEMPT LOGIN (Enforces Ban and Maintenance Mode) ---
         window.attemptLogin = function() {
             const name = loginNameInput.value.trim();
             const pass = loginPassInput.value.trim();
@@ -220,15 +223,14 @@
                 if (maintenanceSnapshot.val() === true) {
                     loginScreen.style.display = "none";
                     maintenanceOverlay.style.display = "flex";
-                    return; // Stop the process
+                    return; 
                 }
                 
-                // If not in maintenance, proceed to ban check
                 // 2. Check Ban Status
                 onValue(ref(userRef, 'banned'), (banSnapshot) => {
                     if (banSnapshot.val() === true) {
                         alert("❌ Your account has been banned by the Administrator.");
-                        return; // Stop the process
+                        return; 
                     }
                     
                     // 3. If clear, proceed to chat session
@@ -256,7 +258,7 @@
 
             loadMessages();
             setupTypingListener();
-            setupAdminListeners(); // NEW: Start listening for admin commands
+            setupAdminListeners();
         }
         
         // --- LOAD MESSAGES ---
@@ -292,7 +294,7 @@
             });
         }
 
-        // --- ADMIN LISTENERS (NEW) ---
+        // --- ADMIN LISTENERS ---
         function setupAdminListeners() {
             const settingsRef = ref(db, 'settings');
 
@@ -312,7 +314,6 @@
             onValue(ref(db, 'alerts'), (snapshot) => {
                 const alerts = snapshot.val();
                 if (alerts) {
-                    // Find the most recent alert
                     const alertKeys = Object.keys(alerts);
                     const lastAlertKey = alertKeys[alertKeys.length - 1];
                     const lastAlert = alerts[lastAlertKey];
@@ -334,18 +335,17 @@
             // D. Listen for Maintenance Mode changes (in case admin toggles it while user is logged in)
             onValue(ref(settingsRef, 'maintenance_mode'), (snapshot) => {
                 if (snapshot.val() === true) {
-                    // If maintenance turns on, force user out
                     alert("The Administrator has initiated Maintenance Mode. You will be logged out.");
                     window.location.reload(); 
                 }
             });
         }
 
-        // --- SEND MESSAGE (NEW: Enforces Word Block) ---
+        // --- SEND MESSAGE (Enforces Word Block) ---
         window.sendMessage = function() {
             const text = messageInput.value;
 
-            // 1. Check for blocked words
+            // 1. Check for blocked words before sending
             const lowerText = text.toLowerCase();
             const foundBlockedWord = blockedWords.find(word => lowerText.includes(word));
 
