@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chatbox Admin Panel</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // ----------------------------------------------------
+        // IMPORTANT: REPLACE THESE PLACEHOLDERS WITH YOUR OWN FIREBASE CONFIG
+        // ----------------------------------------------------
+        const firebaseConfig = {
+          apiKey: "YOUR_API_KEY_HERE", 
+          authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+          databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+          projectId: "YOUR_PROJECT_ID",
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Get a reference to the database service
+        const db = firebase.database();
+    </script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -244,62 +265,116 @@
         }
     });
 
-    // --- Placeholder Functions for Full Functionality (Requires Database/Firebase Integration) ---
+    // --- REAL FIREBASE IMPLEMENTATION (requires 'db' object from above) ---
 
-    // 2. Ban User (Placeholder Logic)
+    // 2. Ban User (Actual Firebase Logic)
     function banUser(username) {
-        // TODO: ADD REAL FIREBASE/DB LOGIC HERE to update user status
-        if(confirm("Are you sure you want to BAN " + username + "? This requires database access.")) {
-            console.log(username + " Ban action initiated.");
+        if (confirm("Are you sure you want to BAN " + username + "? This action is permanent until you manually unban them.")) {
+            // Assumes users are stored under a '/users/' path
+            const userRef = db.ref('users/' + username);
+            
+            userRef.update({
+                banned: true,
+                bannedBy: 'Admin',
+                bannedAt: new Date().toISOString()
+            })
+            .then(() => {
+                alert(`SUCCESS: User '${username}' has been banned in the database.`);
+                // You would typically refresh the UI table here to show the new status
+            })
+            .catch((error) => {
+                alert("ERROR banning user. Check console for details.");
+                console.error("Firebase Ban Error: ", error);
+            });
         }
     }
 
-    // 3. Send Alert (Placeholder Logic)
+    // 3. Send Alert (Actual Firebase Logic - Pushing a temporary notification)
     function sendSystemAlert() {
         const msg = document.getElementById('alertMessage').value;
         if(msg) {
-            // TODO: ADD REAL FIREBASE/DB LOGIC HERE to push the alert message
-            alert("Alert Sent: " + msg + " (Requires database connection for users to see it)");
-            document.getElementById('alertMessage').value = ''; 
+            // Assumes alerts are stored under '/alerts/'
+            db.ref('alerts').push({
+                message: msg,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            })
+            .then(() => {
+                alert("Alert Sent: " + msg);
+                document.getElementById('alertMessage').value = ''; 
+            })
+            .catch((error) => {
+                alert("ERROR sending alert. Check console for details.");
+                console.error("Firebase Alert Error: ", error);
+            });
         } else {
             alert("Please type a message first.");
         }
     }
 
-    // 4. Maintenance Toggle (Placeholder Logic)
+    // 4. Maintenance Toggle (Actual Firebase Logic - Setting a global flag)
     function toggleMaintenance() {
         const isMaintenanceOn = document.getElementById('maintenanceToggle').checked;
-        // TODO: ADD REAL FIREBASE/DB LOGIC HERE to set a global 'maintenance' flag
-        alert("Maintenance Mode is now: " + (isMaintenanceOn ? "ON" : "OFF"));
+        // Assumes global settings are stored under '/settings/'
+        db.ref('settings/maintenance_mode').set(isMaintenanceOn)
+        .then(() => {
+            alert(`Maintenance Mode is now: ${isMaintenanceOn ? "ON" : "OFF"}`);
+        })
+        .catch((error) => {
+            alert("ERROR updating maintenance mode. Check console for details.");
+            console.error("Firebase Maintenance Error: ", error);
+        });
     }
 
-    // 5. Nuke Chat (Placeholder Logic)
+    // 5. Nuke Chat (Placeholder Logic - Firebase requires reading all keys first, so this is complex)
     function nukeChat() {
-        // TODO: ADD REAL FIREBASE/DB LOGIC HERE to delete all message nodes
-        if(confirm("WARNING: This will delete all chat history. Continue?")) {
-            alert("Chat Clear action initiated. (Requires database connection)");
+        // NOTE: True 'Nuke' requires database rules or specific commands.
+        if(confirm("WARNING: This will attempt to delete ALL chat history. This is often blocked by database rules or takes time. Continue?")) {
+            // Assumes messages are stored under '/messages/'
+            db.ref('messages').remove()
+            .then(() => {
+                alert("Chat Clear attempt initiated. Check your database to confirm deletion.");
+            })
+            .catch((error) => {
+                alert("ERROR clearing chat. Check console for details.");
+                console.error("Firebase Nuke Error: ", error);
+            });
         }
     }
 
-    // 6. Pinned Message (Placeholder Logic)
+    // 6. Pinned Message (Actual Firebase Logic)
     function setPin() {
         const pinMsg = document.getElementById('pinMsg').value;
-        // TODO: ADD REAL FIREBASE/DB LOGIC HERE to update a global 'pinned_message' node
-        alert("Message Pinned: " + pinMsg);
+        // Assumes global settings are stored under '/settings/'
+        db.ref('settings/pinned_message').set(pinMsg)
+        .then(() => {
+            alert("Message Pinned: " + pinMsg);
+        })
+        .catch((error) => {
+            alert("ERROR pinning message. Check console for details.");
+            console.error("Firebase Pin Error: ", error);
+        });
     }
 
-    // 7. Bad Word Filter (Placeholder Logic)
+    // 7. Bad Word Filter (Actual Firebase Logic - Pushing to a list)
     function addBadWord() {
-        const badWord = document.getElementById('badWord').value;
-        // TODO: ADD REAL FIREBASE/DB LOGIC HERE to add the word to a list
-        alert(badWord + " added to the blocked list.");
-        document.getElementById('badWord').value = '';
+        const badWord = document.getElementById('badWord').value.trim().toLowerCase();
+        if (badWord) {
+            // Assumes blocked words are stored under '/settings/blocked_words/'
+            db.ref('settings/blocked_words').child(badWord).set(true)
+            .then(() => {
+                alert(`'${badWord}' added to the blocked list.`);
+                document.getElementById('badWord').value = '';
+            })
+            .catch((error) => {
+                alert("ERROR adding bad word. Check console for details.");
+                console.error("Firebase Bad Word Error: ", error);
+            });
+        }
     }
 
-    // 8. Export Chat (Placeholder Logic)
+    // 8. Export Chat (Placeholder Logic - Requires data fetching logic which is too extensive for a single function)
     function exportChat() {
-        // TODO: ADD JS LOGIC HERE to fetch all messages from DB and format as a file
-        alert("Preparing chat history for download... (Requires data fetching logic)");
+        alert("Preparing chat history for download... (Requires complex data fetching and formatting logic)");
     }
 </script>
 
