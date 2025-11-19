@@ -11,7 +11,7 @@
 
     <script>
         // ----------------------------------------------------
-        // IMPORTANT: REPLACE THESE PLACEHOLDERS WITH YOUR OWN FIREBASE CONFIG
+        // 🔴 CRITICAL: REPLACE THESE PLACEHOLDERS WITH YOUR OWN FIREBASE CONFIG
         // ----------------------------------------------------
         const firebaseConfig = {
           apiKey: "YOUR_API_KEY_HERE", 
@@ -66,7 +66,7 @@
         /* 1. User Activity Chart */
         canvas { width: 100% !important; height: 300px !important; }
 
-        /* 2. Ban User Table */
+        /* 2. User Management Table */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f8f9fa; }
@@ -106,8 +106,6 @@
         .btn-alert:hover { background-color: #0056b3; }
 
         /* NEW FEATURE STYLES */
-
-        /* Toggle Switch Styles */
         .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
@@ -115,24 +113,20 @@
         input:checked + .slider { background-color: #2196F3; }
         input:checked + .slider:before { transform: translateX(26px); }
 
-        /* Nuke Button */
         .btn-nuke { background-color: #dc3545; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .btn-nuke:hover { background-color: #c82333; }
         
-        /* Action/Pin Buttons */
         .btn-action { background-color: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 0 5px 5px 0; cursor: pointer; }
         .btn-export { background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
 
         .input-group { display: flex; margin-top: 5px; }
         .input-group input { flex: 1; border-radius: 5px 0 0 5px; border: 1px solid #ccc; padding: 8px; }
 
-        /* Log Box Styles */
         .log-box { background-color: #333; color: #00ff00; padding: 15px; border-radius: 5px; height: 150px; overflow-y: scroll; font-family: monospace; }
         .log-entry { margin: 5px 0; border-bottom: 1px solid #444; padding-bottom: 2px; }
         .log-entry span { color: #888; margin-right: 10px; }
 
-
-        /* Responsive for mobile */
+        /* Responsive */
         @media (max-width: 768px) {
             .dashboard { grid-template-columns: 1fr; }
             .full-width { grid-column: span 1; }
@@ -245,7 +239,9 @@
 </div>
 
 <script>
-    // DEFINE YOUR ADMIN PASSWORD HERE! (CHANGE THIS!)
+    // ----------------------------------------------------------------------
+    // 🔑 SECURITY CHECK - SET YOUR OWN SECRET PASSWORD HERE
+    // ----------------------------------------------------------------------
     const ADMIN_SECRET = "supersecretadmin123"; 
 
     function checkAdminAccess() {
@@ -255,6 +251,7 @@
             document.getElementById('adminDashboard').style.display = 'block';
         } else if (password !== null) {
             alert("Access Denied: Invalid password.");
+            // Assuming the main chat is at the root URL (/)
             window.location.href = "/"; 
         } else {
             window.location.href = "/";
@@ -286,12 +283,10 @@
 
     // --- REAL FIREBASE IMPLEMENTATION (using the 'db' object initialized above) ---
 
-    // 2. Ban User (Actual Firebase Logic)
+    // 2. Ban User 
     function banUser(username) {
-        if (confirm("Are you sure you want to BAN " + username + "? This action is permanent until you manually unban them.")) {
-            // Assumes users are stored under a '/users/' path
+        if (confirm("Are you sure you want to BAN " + username + "?")) {
             const userRef = db.ref('users/' + username);
-            
             userRef.update({
                 banned: true,
                 bannedBy: 'Admin',
@@ -307,11 +302,10 @@
         }
     }
 
-    // 3. Send Alert (Actual Firebase Logic - Pushing a temporary notification)
+    // 3. Send Alert 
     function sendSystemAlert() {
         const msg = document.getElementById('alertMessage').value;
         if(msg) {
-            // Assumes alerts are stored under '/alerts/'
             db.ref('alerts').push({
                 message: msg,
                 timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -329,10 +323,9 @@
         }
     }
 
-    // 4. Maintenance Toggle (Actual Firebase Logic - Setting a global flag)
+    // 4. Maintenance Toggle 
     function toggleMaintenance() {
         const isMaintenanceOn = document.getElementById('maintenanceToggle').checked;
-        // Assumes global settings are stored under '/settings/'
         db.ref('settings/maintenance_mode').set(isMaintenanceOn)
         .then(() => {
             alert(`Maintenance Mode is now: ${isMaintenanceOn ? "ON" : "OFF"}`);
@@ -346,8 +339,7 @@
     // 5. Nuke Chat (Removes all messages from the database)
     function nukeChat() {
         if(confirm("WARNING: This will attempt to delete ALL chat history. Continue?")) {
-            // Assumes messages are stored under '/rooms/' path
-            // This is a powerful command! It clears everything under 'rooms'
+            // Clears all rooms and all messages within them.
             db.ref('rooms').remove() 
             .then(() => {
                 alert("Chat Clear attempt initiated. All room history has been deleted.");
@@ -359,10 +351,9 @@
         }
     }
 
-    // 6. Pinned Message (Actual Firebase Logic)
+    // 6. Pinned Message
     function setPin() {
         const pinMsg = document.getElementById('pinMsg').value;
-        // Assumes global settings are stored under '/settings/'
         db.ref('settings/pinned_message').set(pinMsg)
         .then(() => {
             alert("Message Pinned: " + pinMsg);
@@ -373,11 +364,10 @@
         });
     }
 
-    // 7. Bad Word Filter (Actual Firebase Logic - Pushing to a list)
+    // 7. Bad Word Filter
     function addBadWord() {
         const badWord = document.getElementById('badWord').value.trim().toLowerCase();
         if (badWord) {
-            // Assumes blocked words are stored under '/settings/blocked_words/'
             db.ref('settings/blocked_words').child(badWord).set(true)
             .then(() => {
                 alert(`'${badWord}' added to the blocked list.`);
@@ -390,9 +380,9 @@
         }
     }
 
-    // 8. Export Chat (Placeholder Logic - Requires complex data fetching)
+    // 8. Export Chat (Placeholder)
     function exportChat() {
-        alert("Preparing chat history for download... (Requires complex data fetching and formatting logic)");
+        alert("Preparing chat history for download... (Logic needs to be added here)");
     }
 </script>
 
