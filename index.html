@@ -2,473 +2,399 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat + Avatars</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbox Admin Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script>
+        // ----------------------------------------------------
+        // IMPORTANT: REPLACE THESE PLACEHOLDERS WITH YOUR OWN FIREBASE CONFIG
+        // ----------------------------------------------------
+        const firebaseConfig = {
+          apiKey: "YOUR_API_KEY_HERE", 
+          authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+          databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+          projectId: "YOUR_PROJECT_ID",
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Get a reference to the database service
+        const db = firebase.database();
+    </script>
+    
     <style>
-        /* --- THEME VARIABLES --- */
-        :root {
-            --bg-color: #f0f2f5; --chat-bg: #ffffff; --text-color: #1a1a1a;
-            --secondary-text: #65676b; --input-bg: #f0f2f5; --msg-bg: #f0f2f5;
-            --msg-text: #050505; --header-border: #e5e5e5; --accent-color: #764ba2;
-            --emoji-bg: #ffffff; --emoji-border: #ddd;
-            --alert-bg: #ffdddd; /* New style for alerts */
-        }
-        [data-theme="dark"] {
-            --bg-color: #18191a; --chat-bg: #242526; --text-color: #e4e6eb;
-            --secondary-text: #b0b3b8; --input-bg: #3a3b3c; --msg-bg: #3a3b3c;
-            --msg-text: #e4e6eb; --header-border: #3e4042; --accent-color: #a270d6;
-            --emoji-bg: #2d2d2d; --emoji-border: #444;
-            --alert-bg: #764ba2; /* New style for alerts */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
         }
 
-        html, body { height: 100%; margin: 0; overflow: hidden; }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color); 
-            height: 100dvh; 
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
         }
 
-        /* LOGIN SCREEN */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 340px; }
-        .login-input, .room-select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; outline: none; }
-        .login-btn { background: #764ba2; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
-        
-        /* AVATAR SELECTION */
-        .avatar-label { font-size: 14px; color: #666; margin-top: 10px; display: block; }
-        .avatar-options { display: flex; justify-content: center; gap: 15px; margin: 10px 0; }
-        .avatar-option { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: 0.2s; background: #f0f0f0; }
-        .avatar-option:hover { transform: scale(1.1); }
-        .avatar-option.selected { border-color: var(--accent-color); background: #e0d4fc; }
+        h1 { text-align: center; color: #2c3e50; }
 
-        /* CHAT UI */
-        .chat-container { 
-            background: var(--chat-bg); width: 100%; max-width: 600px; 
-            height: 100%; margin: 0 auto; display: flex; flex-direction: column; display: none; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative;
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
         }
-        
-        header { background-color: var(--chat-bg); padding: 10px 15px; border-bottom: 1px solid var(--header-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        h2 { margin: 0; font-size: 16px; color: var(--text-color); }
-        .room-badge { background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;}
-        .header-controls button, .about-btn { background: transparent; border: 1px solid var(--secondary-text); color: var(--text-color); padding: 4px 8px; border-radius: 15px; cursor: pointer; margin-left: 5px; font-size: 12px; }
-        .about-btn { text-decoration: none; display: inline-block; }
 
-        /* Pinned Message Style */
-        #pinned-message { background: var(--alert-bg); color: var(--text-color); padding: 8px 15px; font-size: 13px; text-align: center; border-bottom: 1px solid var(--header-border); display: none; }
-
-        #messages { flex: 1; padding: 15px; overflow-y: scroll; background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; }
-        .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; cursor: pointer; }
-        
-        /* NEW AVATAR STYLE */
-        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; background: #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        .msg-content { max-width: 80%; }
-        .msg-info { font-size: 11px; color: var(--secondary-text); margin-bottom: 2px; margin-left: 2px; }
-        .msg-text { background: var(--msg-bg); color: var(--msg-text); padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-        .msg-text a { color: var(--accent-color); }
-        .msg-text b { color: var(--accent-color); }
-        .msg-text code { background: rgba(0,0,0,0.1); padding: 2px 5px; border-radius: 4px; font-family: monospace; color: #d63384; }
-        .msg-image { max-width: 100%; border-radius: 12px; margin-top: 5px; }
-
-        #typing-bar { padding: 2px 15px; font-size: 12px; color: var(--accent-color); font-style: italic; min-height: 18px; background: var(--chat-bg); opacity: 0; transition: opacity 0.3s; }
-        #maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); color: white; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; z-index: 1001; }
-        .input-area { 
-            padding: 10px; background: var(--chat-bg); border-top: 1px solid var(--header-border); 
-            display: flex; gap: 8px; align-items: center; padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; position: relative;
+        /* Cards */
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        #messageInput { flex: 1; padding: 10px; background: var(--input-bg); color: var(--text-color); border-radius: 20px; border: none; outline: none; font-size: 16px; }
-        #sendBtn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 16px;}
 
-        /* EMOJI PICKER */
-        #emojiBtn { cursor: pointer; font-size: 22px; background: none; border: none; padding: 0 5px; filter: grayscale(100%); transition: 0.2s; }
-        #emojiBtn:hover { filter: grayscale(0%); transform: scale(1.1); }
+        .full-width { grid-column: span 2; }
+
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+        /* 1. User Activity Chart */
+        canvas { width: 100% !important; height: 300px !important; }
+
+        /* 2. Ban User Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
         
-        #emojiPicker {
-            position: absolute; bottom: 70px; left: 10px; width: 250px; height: 200px;
-            background: var(--emoji-bg); border: 1px solid var(--emoji-border); border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: none; grid-template-columns: repeat(6, 1fr);
-            gap: 5px; padding: 10px; overflow-y: auto; z-index: 100;
-        }
-        .emoji-item { font-size: 20px; cursor: pointer; text-align: center; padding: 5px; border-radius: 5px; }
-        .emoji-item:hover { background: rgba(0,0,0,0.1); }
+        .status-active { color: green; font-weight: bold; }
+        .status-banned { color: red; font-weight: bold; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-ban {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-ban:hover { background-color: #cc0000; }
+
+        /* 3. Alert System */
+        .alert-box {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .btn-alert {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-alert:hover { background-color: #0056b3; }
+
+        /* NEW FEATURE STYLES */
+
+        /* Toggle Switch Styles */
+        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+        /* Nuke Button */
+        .btn-nuke { background-color: #dc3545; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-nuke:hover { background-color: #c82333; }
+        
+        /* Action/Pin Buttons */
+        .btn-action { background-color: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 0 5px 5px 0; cursor: pointer; }
+        .btn-export { background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+
+        .input-group { display: flex; margin-top: 5px; }
+        .input-group input { flex: 1; border-radius: 5px 0 0 5px; border: 1px solid #ccc; padding: 8px; }
+
+        /* Log Box Styles */
+        .log-box { background-color: #333; color: #00ff00; padding: 15px; border-radius: 5px; height: 150px; overflow-y: scroll; font-family: monospace; }
+        .log-entry { margin: 5px 0; border-bottom: 1px solid #444; padding-bottom: 2px; }
+        .log-entry span { color: #888; margin-right: 10px; }
+
+
+        /* Responsive for mobile */
+        @media (max-width: 768px) {
+            .dashboard { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="maintenance-overlay">
-        <h1>🛠️ System Maintenance 🛠️</h1>
-        <p>The chat room is currently closed for maintenance and updates by the Administrator.</p>
-        <p style="font-size: 1.2em; margin-top: 20px;">Please check back later!</p>
-    </div>
+<div class="container" id="adminDashboard" style="display: none;">
+    <h1>Admin Control Panel</h1>
 
-    <div id="login-screen">
-        <div class="login-card">
-            <h2>Join Chat</h2>
-            <input type="text" id="loginNameInput" class="login-input" placeholder="Your Name" autocomplete="off">
-            <input type="password" id="loginPassInput" class="login-input" placeholder="Password (12345)">
-            
-            <span class="avatar-label">Choose your look:</span>
-            <div class="avatar-options">
-                <img src="https://api.dicebear.com/9.x/adventurer/svg?seed=1" class="avatar-option selected" onclick="selectStyle('adventurer', this)">
-                <img src="https://api.dicebear.com/9.x/bottts/svg?seed=2" class="avatar-option" onclick="selectStyle('bottts', this)">
-                <img src="https://api.dicebear.com/9.x/thumbs/svg?seed=3" class="avatar-option" onclick="selectStyle('thumbs', this)">
-            </div>
-
-            <select id="roomSelect" class="room-select">
-                <option value="general">🏠 General Chat</option>
-                <option value="tech">💻 Tech Talk</option>
-                <option value="it">🔌 IT Support</option>
-                <option value="gaming">🎮 Gaming</option>
-            </select>
-            <button class="login-btn" onclick="attemptLogin()">Join Room</button>
+    <div class="dashboard">
+        
+        <div class="card full-width">
+            <h2>User Activity Chart</h2>
+            <canvas id="activityChart"></canvas>
         </div>
-    </div>
 
-    <div class="chat-container" id="chatInterface">
-        <header>
-            <div style="display: flex; flex-direction: column;">
-                <h2 id="headerTitle">Chat</h2>
-                <span id="currentRoomBadge" class="room-badge">General</span>
-            </div>
-            <div class="header-controls">
-                <a href="about.html" style="text-decoration:none;"><button class="about-btn">ℹ️</button></a>
-                <button onclick="toggleTheme()" id="themeBtn">🌙</button>
-                <button onclick="clearChat()" style="color:#dc3545; border-color:#dc3545">🗑️</button>
-            </div>
-        </header>
-
-        <div id="pinned-message"></div>
-
-        <div id="messages"></div>
-        <div id="typing-bar">Someone is typing...</div>
-
-        <div class="input-area">
-            <div id="emojiPicker"></div>
-            <input type="file" id="fileInput" accept="image/*" style="display:none">
-            <label for="fileInput" style="cursor:pointer; font-size:22px; color: #65676b">📎</label>
-            <button id="emojiBtn" onclick="toggleEmojiPicker()">😀</button>
-            <input type="text" id="messageInput" placeholder="Message...">
-            <button id="sendBtn" onclick="sendMessage()">➤</button>
+        <div class="card full-width">
+            <h2>User Management</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="userTable">
+                    <tr>
+                        <td>Your_User_Name</td>
+                        <td class="status-active">Active (Admin)</td>
+                        <td><button class="btn-ban" disabled>Cannot Ban</button></td>
+                    </tr>
+                    <tr>
+                        <td>Friend_1</td>
+                        <td class="status-active">Active</td>
+                        <td><button class="btn-ban" onclick="banUser('Friend_1')">Ban User</button></td>
+                    </tr>
+                    <tr>
+                        <td>Spammer_01</td>
+                        <td class="status-banned">Banned</td>
+                        <td><button class="btn-ban" style="background-color:grey;" disabled>Banned</button></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-        import { getDatabase, ref, push, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
-            authDomain: "mypersonalchatboxapp.firebaseapp.com",
-            databaseURL: "https://mypersonalchatboxapp-default-rtdb.firebaseio.com",
-            projectId: "mypersonalchatboxapp",
-            storageBucket: "mypersonalchatboxapp.firebasestorage.app",
-            messagingSenderId: "290120332790",
-            appId: "1:290120332790:web:14e0487f7d37b5e404c3d7",
-            measurementId: "G-0695T29ZT6"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const sound = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
-        const ROOM_PASSWORD = "12345"; 
         
-        let activeChatRef, typingRef; 
-        let currentUser = "";
-        let currentRoomName = "";
-        let currentAvatarStyle = "adventurer";
-        let typingTimeout;
-        let blockedWords = []; // List of words to block
-        
-        const loginNameInput = document.getElementById("loginNameInput");
-        const loginPassInput = document.getElementById("loginPassInput");
-        const roomSelect = document.getElementById("roomSelect");
-        const chatInterface = document.getElementById("chatInterface");
-        const loginScreen = document.getElementById("login-screen");
-        const maintenanceOverlay = document.getElementById("maintenance-overlay");
-        const messageInput = document.getElementById("messageInput");
+        <div class="card full-width">
+            <h2>Send System Alert</h2>
+            <p>This message will appear as a popup for all users currently online.</p>
+            <div class="alert-box">
+                <input type="text" id="alertMessage" placeholder="Type important announcement here...">
+                <button class="btn-alert" onclick="sendSystemAlert()">Send to All</button>
+            </div>
+        </div>
 
-        // Auto-fill name
-        const savedName = localStorage.getItem("chatUsername");
-        if(savedName) loginNameInput.value = savedName;
-
-        // --- AVATAR SELECTION LOGIC ---
-        window.selectStyle = function(style, element) {
-            currentAvatarStyle = style;
-            document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
-            element.classList.add('selected');
-        }
-
-        // --- ATTEMPT LOGIN (NEW: Enforces Ban and Maintenance Mode) ---
-        window.attemptLogin = function() {
-            const name = loginNameInput.value.trim();
-            const pass = loginPassInput.value.trim();
-            const room = roomSelect.value;
-
-            if(!name) return alert("Name required!");
-            if(pass !== ROOM_PASSWORD) return alert("Wrong Password!");
-
-            // Reference to user data and global settings
-            const userRef = ref(db, 'users/' + name);
-            const settingsRef = ref(db, 'settings');
-
-            // 1. Check Maintenance Mode
-            onValue(ref(settingsRef, 'maintenance_mode'), (maintenanceSnapshot) => {
-                if (maintenanceSnapshot.val() === true) {
-                    loginScreen.style.display = "none";
-                    maintenanceOverlay.style.display = "flex";
-                    return; // Stop the process
-                }
-                
-                // If not in maintenance, proceed to ban check
-                // 2. Check Ban Status
-                onValue(ref(userRef, 'banned'), (banSnapshot) => {
-                    if (banSnapshot.val() === true) {
-                        alert("❌ Your account has been banned by the Administrator.");
-                        return; // Stop the process
-                    }
-                    
-                    // 3. If clear, proceed to chat session
-                    startChatSession(name, room);
-                }, { onlyOnce: true });
-            }, { onlyOnce: true });
-        }
-
-        // --- START CHAT SESSION ---
-        function startChatSession(name, room) {
-            currentUser = name;
-            localStorage.setItem("chatUsername", name);
-            currentRoomName = room;
-
-            document.getElementById("headerTitle").innerText = name;
-            document.getElementById("currentRoomBadge").innerText = room.toUpperCase();
-            loginScreen.style.display = "none";
-            chatInterface.style.display = "flex";
-
-            activeChatRef = ref(db, 'rooms/' + room + '/messages');
-            typingRef = ref(db, 'rooms/' + room + '/typing');
-
-            const myTypingRef = ref(db, 'rooms/' + room + '/typing/' + name);
-            onDisconnect(myTypingRef).remove();
-
-            loadMessages();
-            setupTypingListener();
-            setupAdminListeners(); // NEW: Start listening for admin commands
-        }
-        
-        // --- LOAD MESSAGES ---
-        function loadMessages() {
-            onValue(activeChatRef, (snapshot) => {
-                const msgBox = document.getElementById("messages");
-                msgBox.innerHTML = ""; 
-                const data = snapshot.val();
-                if(data) {
-                    Object.entries(data).forEach(([key, chat]) => {
-                        let contentHtml = chat.type === 'image' 
-                            ? `<img src="${chat.message}" class="msg-image">` 
-                            : formatMessage(chat.message || "");
-                        
-                        let avatarSrc = chat.avatarUrl || `https://api.dicebear.com/9.x/initials/svg?seed=${chat.name}`;
-
-                        const newMsg = document.createElement('div');
-                        newMsg.className = 'msg';
-                        newMsg.ondblclick = () => deleteMessage(key); 
-                        
-                        newMsg.innerHTML = `
-                            <img src="${avatarSrc}" class="msg-avatar">
-                            <div class="msg-content">
-                                <div class="msg-info"><strong>${chat.name}</strong> • ${chat.time}</div>
-                                <div class="msg-text">${contentHtml}</div>
-                            </div>
-                        `;
-                        msgBox.appendChild(newMsg);
-                    });
-                    sound.play().catch(e=>{});
-                    msgBox.scrollTop = msgBox.scrollHeight;
-                }
-            });
-        }
-
-        // --- ADMIN LISTENERS (NEW) ---
-        function setupAdminListeners() {
-            const settingsRef = ref(db, 'settings');
-
-            // A. Listen for Pinned Message updates
-            onValue(ref(settingsRef, 'pinned_message'), (snapshot) => {
-                const pinnedMsg = snapshot.val();
-                const pinnedDiv = document.getElementById('pinned-message');
-                if (pinnedMsg && pinnedMsg.trim() !== '') {
-                    pinnedDiv.innerText = `📌 ${pinnedMsg}`;
-                    pinnedDiv.style.display = 'block';
-                } else {
-                    pinnedDiv.style.display = 'none';
-                }
-            });
-
-            // B. Listen for System Alerts
-            onValue(ref(db, 'alerts'), (snapshot) => {
-                const alerts = snapshot.val();
-                if (alerts) {
-                    // Find the most recent alert
-                    const alertKeys = Object.keys(alerts);
-                    const lastAlertKey = alertKeys[alertKeys.length - 1];
-                    const lastAlert = alerts[lastAlertKey];
-                    
-                    if (!sessionStorage.getItem('lastAlertTimestamp') || sessionStorage.getItem('lastAlertTimestamp') < lastAlert.timestamp) {
-                        alert(`🚨 NEW SYSTEM ALERT: ${lastAlert.message}`);
-                        sessionStorage.setItem('lastAlertTimestamp', lastAlert.timestamp);
-                    }
-                }
-            });
-
-            // C. Listen for Blocked Words
-            onValue(ref(settingsRef, 'blocked_words'), (snapshot) => {
-                const wordsObject = snapshot.val();
-                blockedWords = Object.keys(wordsObject || {});
-                console.log("Blocked words updated:", blockedWords);
-            });
-
-            // D. Listen for Maintenance Mode changes (in case admin toggles it while user is logged in)
-            onValue(ref(settingsRef, 'maintenance_mode'), (snapshot) => {
-                if (snapshot.val() === true) {
-                    // If maintenance turns on, force user out
-                    alert("The Administrator has initiated Maintenance Mode. You will be logged out.");
-                    window.location.reload(); 
-                }
-            });
-        }
-
-        // --- SEND MESSAGE (NEW: Enforces Word Block) ---
-        window.sendMessage = function() {
-            const text = messageInput.value;
-
-            // 1. Check for blocked words
-            const lowerText = text.toLowerCase();
-            const foundBlockedWord = blockedWords.find(word => lowerText.includes(word));
-
-            if (foundBlockedWord) {
-                alert(`🚫 Message blocked! The word "${foundBlockedWord}" is not allowed.`);
-                messageInput.value = "";
-                return;
-            }
+        <div class="card">
+            <h2>Security Controls</h2>
             
-            // 2. Proceed if not blocked
-            if(text.trim() !== "") {
-                const myAvatarUrl = `https://api.dicebear.com/9.x/${currentAvatarStyle}/svg?seed=${currentUser}`;
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <span><strong>Maintenance Mode:</strong><br><small>Lock chat for everyone</small></span>
+                <label class="switch">
+                    <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()">
+                    <span class="slider round"></span>
+                </label>
+            </div>
 
-                push(activeChatRef, {
-                    name: currentUser,
-                    message: text,
-                    type: 'text',
-                    avatarUrl: myAvatarUrl, 
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                });
-                messageInput.value = "";
-                remove(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser));
-            }
+            <div style="border-top: 1px solid #eee; padding-top: 15px;">
+                <p><strong>Emergency Zone</strong></p>
+                <button class="btn-nuke" onclick="nukeChat()">☢️ Clear All Messages</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Chat Settings</h2>
+            
+            <div style="margin-bottom: 15px;">
+                <label>Set Pinned Message (Top of Chat):</label>
+                <div class="input-group">
+                    <input type="text" id="pinMsg" placeholder="e.g. Welcome to the group!">
+                    <button class="btn-action" onclick="setPin()">Pin</button>
+                </div>
+            </div>
+
+            <div>
+                <label>Add to Blocked Words List:</label>
+                <div class="input-group">
+                    <input type="text" id="badWord" placeholder="Enter word to block">
+                    <button class="btn-action" onclick="addBadWord()">Block</button>
+                </div>
+                <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">Blocked: <em>(words will appear here)</em></p>
+            </div>
+        </div>
+
+        <div class="card full-width">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Admin Action Logs</h2>
+                <button class="btn-export" onclick="exportChat()">📥 Download Chat History</button>
+            </div>
+            
+            <div class="log-box">
+                <p class="log-entry"><span>[10:05 AM]</span> System: Admin cleared the chat.</p>
+                <p class="log-entry"><span>[09:45 AM]</span> System: User 'Friend_2' was banned.</p>
+                <p class="log-entry"><span>[09:00 AM]</span> System: Admin logged in.</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // DEFINE YOUR ADMIN PASSWORD HERE! (CHANGE THIS!)
+    const ADMIN_SECRET = "supersecretadmin123"; 
+
+    function checkAdminAccess() {
+        const password = prompt("Enter Administrator Password:");
+        
+        if (password === ADMIN_SECRET) {
+            document.getElementById('adminDashboard').style.display = 'block';
+        } else if (password !== null) {
+            alert("Access Denied: Invalid password.");
+            window.location.href = "/"; 
+        } else {
+            window.location.href = "/";
         }
+    }
+    checkAdminAccess();
 
-        document.getElementById("messageInput").addEventListener('input', () => {
-            set(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser), true);
-            clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                remove(ref(db, 'rooms/' + currentRoomName + '/typing/' + currentUser));
-            }, 2000);
-        });
 
-        function setupTypingListener() {
-            onValue(typingRef, (snapshot) => {
-                const data = snapshot.val();
-                const typingDiv = document.getElementById("typing-bar");
-                if (data) {
-                    const names = Object.keys(data).filter(name => name !== currentUser);
-                    if (names.length > 0) {
-                        typingDiv.innerText = names.join(", ") + " is typing...";
-                        typingDiv.style.opacity = "1";
-                    } else { typingDiv.style.opacity = "0"; }
-                } else { typingDiv.style.opacity = "0"; }
+    // --- 1. Chart Configuration (Visual Only) ---
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+                label: 'Messages Sent',
+                data: [12, 19, 3, 5, 2, 3, 15], // Sample data
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // --- REAL FIREBASE IMPLEMENTATION (using the 'db' object initialized above) ---
+
+    // 2. Ban User (Actual Firebase Logic)
+    function banUser(username) {
+        if (confirm("Are you sure you want to BAN " + username + "? This action is permanent until you manually unban them.")) {
+            // Assumes users are stored under a '/users/' path
+            const userRef = db.ref('users/' + username);
+            
+            userRef.update({
+                banned: true,
+                bannedBy: 'Admin',
+                bannedAt: new Date().toISOString()
+            })
+            .then(() => {
+                alert(`SUCCESS: User '${username}' has been banned in the database.`);
+            })
+            .catch((error) => {
+                alert("ERROR banning user. Check console for details.");
+                console.error("Firebase Ban Error: ", error);
             });
         }
+    }
 
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const myAvatarUrl = `https://api.dicebear.com/9.x/${currentAvatarStyle}/svg?seed=${currentUser}`;
-                    push(activeChatRef, {
-                        name: currentUser,
-                        message: e.target.result,
-                        type: 'image',
-                        avatarUrl: myAvatarUrl,
-                        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                    });
-                };
-                reader.readAsDataURL(file);
-                e.target.value = ''; 
-            }
+    // 3. Send Alert (Actual Firebase Logic - Pushing a temporary notification)
+    function sendSystemAlert() {
+        const msg = document.getElementById('alertMessage').value;
+        if(msg) {
+            // Assumes alerts are stored under '/alerts/'
+            db.ref('alerts').push({
+                message: msg,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            })
+            .then(() => {
+                alert("Alert Sent: " + msg);
+                document.getElementById('alertMessage').value = ''; 
+            })
+            .catch((error) => {
+                alert("ERROR sending alert. Check console for details.");
+                console.error("Firebase Alert Error: ", error);
+            });
+        } else {
+            alert("Please type a message first.");
+        }
+    }
+
+    // 4. Maintenance Toggle (Actual Firebase Logic - Setting a global flag)
+    function toggleMaintenance() {
+        const isMaintenanceOn = document.getElementById('maintenanceToggle').checked;
+        // Assumes global settings are stored under '/settings/'
+        db.ref('settings/maintenance_mode').set(isMaintenanceOn)
+        .then(() => {
+            alert(`Maintenance Mode is now: ${isMaintenanceOn ? "ON" : "OFF"}`);
+        })
+        .catch((error) => {
+            alert("ERROR updating maintenance mode. Check console for details.");
+            console.error("Firebase Maintenance Error: ", error);
         });
+    }
 
-        window.toggleTheme = function() {
-            const body = document.body;
-            const btn = document.getElementById("themeBtn");
-            if (body.getAttribute("data-theme") === "dark") {
-                body.removeAttribute("data-theme"); btn.innerText = "🌙";
-            } else { body.setAttribute("data-theme", "dark"); btn.innerText = "☀️"; }
+    // 5. Nuke Chat (Removes all messages from the database)
+    function nukeChat() {
+        if(confirm("WARNING: This will attempt to delete ALL chat history. Continue?")) {
+            // Assumes messages are stored under '/rooms/' path
+            // This is a powerful command! It clears everything under 'rooms'
+            db.ref('rooms').remove() 
+            .then(() => {
+                alert("Chat Clear attempt initiated. All room history has been deleted.");
+            })
+            .catch((error) => {
+                alert("ERROR clearing chat. Check console for details.");
+                console.error("Firebase Nuke Error: ", error);
+            });
         }
+    }
 
-        window.deleteMessage = function(messageId) {
-            if(confirm("Delete this message?")) {
-                const password = prompt("Enter Password:");
-                if(password === ROOM_PASSWORD) {
-                    remove(ref(db, 'rooms/' + currentRoomName + '/messages/' + messageId));
-                } else { alert("Wrong password"); }
-            }
-        }
-
-        window.clearChat = function() {
-            const password = prompt("ADMIN: Clear ALL messages in this room?");
-            if(password === ROOM_PASSWORD) { set(activeChatRef, null); } 
-            else if (password !== null) { alert("Wrong Password"); }
-        }
-
-        function formatMessage(text) {
-            text = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-            text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            text = text.replace(/`(.*?)`/g, '<code>$1</code>');
-            return text;
-        }
-
-        // --- EMOJI PICKER LOGIC ---
-        const emojiList = ["😀","😁","😂","🤣","😉","😊","😍","🤩","😎","🤔","🤨","😐","🙄","😴","🤢","🤮","🤧","😷","🤯","🥳","🔥","✨","❤️","👍","👎","👋","🙏","💪","👀","🎉"];
-        const picker = document.getElementById("emojiPicker");
-        emojiList.forEach(emoji => {
-            const span = document.createElement("span");
-            span.className = "emoji-item";
-            span.innerText = emoji;
-            span.onclick = () => {
-                const input = document.getElementById("messageInput");
-                input.value += emoji;
-                input.focus();
-                const event = new Event('input');
-                input.dispatchEvent(event);
-            };
-            picker.appendChild(span);
+    // 6. Pinned Message (Actual Firebase Logic)
+    function setPin() {
+        const pinMsg = document.getElementById('pinMsg').value;
+        // Assumes global settings are stored under '/settings/'
+        db.ref('settings/pinned_message').set(pinMsg)
+        .then(() => {
+            alert("Message Pinned: " + pinMsg);
+        })
+        .catch((error) => {
+            alert("ERROR pinning message. Check console for details.");
+            console.error("Firebase Pin Error: ", error);
         });
-        window.toggleEmojiPicker = function() {
-            picker.style.display = (picker.style.display === "grid") ? "none" : "grid";
-        }
-        document.addEventListener('click', function(event) {
-            const isClickInside = picker.contains(event.target) || document.getElementById('emojiBtn').contains(event.target);
-            if (!isClickInside) picker.style.display = 'none';
-        });
+    }
 
-        document.getElementById("messageInput").addEventListener("keypress", (e) => {
-            if(e.key === "Enter") sendMessage();
-        });
-    </script>
+    // 7. Bad Word Filter (Actual Firebase Logic - Pushing to a list)
+    function addBadWord() {
+        const badWord = document.getElementById('badWord').value.trim().toLowerCase();
+        if (badWord) {
+            // Assumes blocked words are stored under '/settings/blocked_words/'
+            db.ref('settings/blocked_words').child(badWord).set(true)
+            .then(() => {
+                alert(`'${badWord}' added to the blocked list.`);
+                document.getElementById('badWord').value = '';
+            })
+            .catch((error) => {
+                alert("ERROR adding bad word. Check console for details.");
+                console.error("Firebase Bad Word Error: ", error);
+            });
+        }
+    }
+
+    // 8. Export Chat (Placeholder Logic - Requires complex data fetching)
+    function exportChat() {
+        alert("Preparing chat history for download... (Requires complex data fetching and formatting logic)");
+    }
+</script>
+
 </body>
 </html>
