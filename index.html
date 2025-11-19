@@ -2,389 +2,68 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbox Admin Panel</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-
-    <script>
-        // ----------------------------------------------------
-        // 🔴 CRITICAL: REPLACE THESE PLACEHOLDERS WITH YOUR OWN FIREBASE CONFIG
-        // ----------------------------------------------------
-        const firebaseConfig = {
-          apiKey: "YOUR_API_KEY_HERE", 
-          authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-          databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-          projectId: "YOUR_PROJECT_ID",
-        };
-        
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        
-        // Get a reference to the database service
-        const db = firebase.database();
-    </script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pro Chat + Avatars</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            color: #333;
+        /* --- THEME VARIABLES --- */
+        :root {
+            --bg-color: #f0f2f5; --chat-bg: #ffffff; --text-color: #1a1a1a;
+            --secondary-text: #65676b; --input-bg: #f0f2f5; --msg-bg: #f0f2f5;
+            --msg-text: #050505; --header-border: #e5e5e5; --accent-color: #764ba2;
+            --emoji-bg: #ffffff; --emoji-border: #ddd;
+            --alert-bg: #ffdddd; /* New style for alerts */
+        }
+        [data-theme="dark"] {
+            --bg-color: #18191a; --chat-bg: #242526; --text-color: #e4e6eb;
+            --secondary-text: #b0b3b8; --input-bg: #3a3b3c; --msg-bg: #3a3b3c;
+            --msg-text: #e4e6eb; --header-border: #3e4042; --accent-color: #a270d6;
+            --emoji-bg: #2d2d2d; --emoji-border: #444;
+            --alert-bg: #764ba2; /* New style for alerts */
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        h1 { text-align: center; color: #2c3e50; }
-
-        /* Dashboard Grid */
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        /* Cards */
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .full-width { grid-column: span 2; }
-
-        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-
-        /* 1. User Activity Chart */
-        canvas { width: 100% !important; height: 300px !important; }
-
-        /* 2. User Management Table */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; }
+        html, body { height: 100%; margin: 0; overflow: hidden; }
         
-        .status-active { color: green; font-weight: bold; }
-        .status-banned { color: red; font-weight: bold; }
-
-        .btn-ban {
-            background-color: #ff4d4d;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color); 
+            height: 100dvh; 
         }
-        .btn-ban:hover { background-color: #cc0000; }
 
-        /* 3. Alert System */
-        .alert-box {
-            display: flex;
-            gap: 10px;
-        }
-        input[type="text"] {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .btn-alert {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-alert:hover { background-color: #0056b3; }
-
-        /* NEW FEATURE STYLES */
-        .switch { position: relative; display: inline-block; width: 50px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #2196F3; }
-        input:checked + .slider:before { transform: translateX(26px); }
-
-        .btn-nuke { background-color: #dc3545; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-nuke:hover { background-color: #c82333; }
+        /* LOGIN SCREEN */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; width: 85%; max-width: 340px; }
+        .login-input, .room-select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; text-align: center; outline: none; }
+        .login-btn { background: #764ba2; color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 15px; }
         
-        .btn-action { background-color: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 0 5px 5px 0; cursor: pointer; }
-        .btn-export { background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        /* AVATAR SELECTION */
+        .avatar-label { font-size: 14px; color: #666; margin-top: 10px; display: block; }
+        .avatar-options { display: flex; justify-content: center; gap: 15px; margin: 10px 0; }
+        .avatar-option { width: 50px; height: 50px; border-radius: 50%; cursor: pointer; border: 3px solid transparent; transition: 0.2s; background: #f0f0f0; }
+        .avatar-option:hover { transform: scale(1.1); }
+        .avatar-option.selected { border-color: var(--accent-color); background: #e0d4fc; }
 
-        .input-group { display: flex; margin-top: 5px; }
-        .input-group input { flex: 1; border-radius: 5px 0 0 5px; border: 1px solid #ccc; padding: 8px; }
-
-        .log-box { background-color: #333; color: #00ff00; padding: 15px; border-radius: 5px; height: 150px; overflow-y: scroll; font-family: monospace; }
-        .log-entry { margin: 5px 0; border-bottom: 1px solid #444; padding-bottom: 2px; }
-        .log-entry span { color: #888; margin-right: 10px; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .dashboard { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
+        /* CHAT UI */
+        .chat-container { 
+            background: var(--chat-bg); width: 100%; max-width: 600px; 
+            height: 100%; margin: 0 auto; display: flex; flex-direction: column; display: none; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.1); position: relative;
         }
-    </style>
-</head>
-<body>
-
-<div class="container" id="adminDashboard" style="display: none;">
-    <h1>Admin Control Panel</h1>
-
-    <div class="dashboard">
         
-        <div class="card full-width">
-            <h2>User Activity Chart</h2>
-            <canvas id="activityChart"></canvas>
-        </div>
+        header { background-color: var(--chat-bg); padding: 10px 15px; border-bottom: 1px solid var(--header-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        h2 { margin: 0; font-size: 16px; color: var(--text-color); }
+        .room-badge { background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;}
+        .header-controls button, .about-btn { background: transparent; border: 1px solid var(--secondary-text); color: var(--text-color); padding: 4px 8px; border-radius: 15px; cursor: pointer; margin-left: 5px; font-size: 12px; }
+        .about-btn { text-decoration: none; display: inline-block; }
 
-        <div class="card full-width">
-            <h2>User Management</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="userTable">
-                    <tr>
-                        <td>Your_User_Name</td>
-                        <td class="status-active">Active (Admin)</td>
-                        <td><button class="btn-ban" disabled>Cannot Ban</button></td>
-                    </tr>
-                    <tr>
-                        <td>Friend_1</td>
-                        <td class="status-active">Active</td>
-                        <td><button class="btn-ban" onclick="banUser('Friend_1')">Ban User</button></td>
-                    </tr>
-                    <tr>
-                        <td>Spammer_01</td>
-                        <td class="status-banned">Banned</td>
-                        <td><button class="btn-ban" style="background-color:grey;" disabled>Banned</button></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        /* Pinned Message Style */
+        #pinned-message { background: var(--alert-bg); color: var(--text-color); padding: 8px 15px; font-size: 13px; text-align: center; border-bottom: 1px solid var(--header-border); display: none; }
+
+        #messages { flex: 1; padding: 15px; overflow-y: scroll; background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; }
+        .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; cursor: pointer; }
         
-        <div class="card full-width">
-            <h2>Send System Alert</h2>
-            <p>This message will appear as a popup for all users currently online.</p>
-            <div class="alert-box">
-                <input type="text" id="alertMessage" placeholder="Type important announcement here...">
-                <button class="btn-alert" onclick="sendSystemAlert()">Send to All</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Security Controls</h2>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <span><strong>Maintenance Mode:</strong><br><small>Lock chat for everyone</small></span>
-                <label class="switch">
-                    <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance()">
-                    <span class="slider round"></span>
-                </label>
-            </div>
-
-            <div style="border-top: 1px solid #eee; padding-top: 15px;">
-                <p><strong>Emergency Zone</strong></p>
-                <button class="btn-nuke" onclick="nukeChat()">☢️ Clear All Messages</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h2>Chat Settings</h2>
-            
-            <div style="margin-bottom: 15px;">
-                <label>Set Pinned Message (Top of Chat):</label>
-                <div class="input-group">
-                    <input type="text" id="pinMsg" placeholder="e.g. Welcome to the group!">
-                    <button class="btn-action" onclick="setPin()">Pin</button>
-                </div>
-            </div>
-
-            <div>
-                <label>Add to Blocked Words List:</label>
-                <div class="input-group">
-                    <input type="text" id="badWord" placeholder="Enter word to block">
-                    <button class="btn-action" onclick="addBadWord()">Block</button>
-                </div>
-                <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">Blocked: <em>(words will appear here)</em></p>
-            </div>
-        </div>
-
-        <div class="card full-width">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Admin Action Logs</h2>
-                <button class="btn-export" onclick="exportChat()">📥 Download Chat History</button>
-            </div>
-            
-            <div class="log-box">
-                <p class="log-entry"><span>[10:05 AM]</span> System: Admin cleared the chat.</p>
-                <p class="log-entry"><span>[09:45 AM]</span> System: User 'Friend_2' was banned.</p>
-                <p class="log-entry"><span>[09:00 AM]</span> System: Admin logged in.</p>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<script>
-    // ----------------------------------------------------------------------
-    // 🔑 SECURITY CHECK - SET YOUR OWN SECRET PASSWORD HERE
-    // ----------------------------------------------------------------------
-    const ADMIN_SECRET = "supersecretadmin123"; 
-
-    function checkAdminAccess() {
-        const password = prompt("Enter Administrator Password:");
+        /* NEW AVATAR STYLE */
+        .msg-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; background: #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        if (password === ADMIN_SECRET) {
-            document.getElementById('adminDashboard').style.display = 'block';
-        } else if (password !== null) {
-            alert("Access Denied: Invalid password.");
-            // Assuming the main chat is at the root URL (/)
-            window.location.href = "/"; 
-        } else {
-            window.location.href = "/";
-        }
-    }
-    checkAdminAccess();
-
-
-    // --- 1. Chart Configuration (Visual Only) ---
-    const ctx = document.getElementById('activityChart').getContext('2d');
-    const activityChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-                label: 'Messages Sent',
-                data: [12, 19, 3, 5, 2, 3, 15], // Sample data
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false
-        }
-    });
-
-    // --- REAL FIREBASE IMPLEMENTATION (using the 'db' object initialized above) ---
-
-    // 2. Ban User 
-    function banUser(username) {
-        if (confirm("Are you sure you want to BAN " + username + "?")) {
-            const userRef = db.ref('users/' + username);
-            userRef.update({
-                banned: true,
-                bannedBy: 'Admin',
-                bannedAt: new Date().toISOString()
-            })
-            .then(() => {
-                alert(`SUCCESS: User '${username}' has been banned in the database.`);
-            })
-            .catch((error) => {
-                alert("ERROR banning user. Check console for details.");
-                console.error("Firebase Ban Error: ", error);
-            });
-        }
-    }
-
-    // 3. Send Alert 
-    function sendSystemAlert() {
-        const msg = document.getElementById('alertMessage').value;
-        if(msg) {
-            db.ref('alerts').push({
-                message: msg,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            })
-            .then(() => {
-                alert("Alert Sent: " + msg);
-                document.getElementById('alertMessage').value = ''; 
-            })
-            .catch((error) => {
-                alert("ERROR sending alert. Check console for details.");
-                console.error("Firebase Alert Error: ", error);
-            });
-        } else {
-            alert("Please type a message first.");
-        }
-    }
-
-    // 4. Maintenance Toggle 
-    function toggleMaintenance() {
-        const isMaintenanceOn = document.getElementById('maintenanceToggle').checked;
-        db.ref('settings/maintenance_mode').set(isMaintenanceOn)
-        .then(() => {
-            alert(`Maintenance Mode is now: ${isMaintenanceOn ? "ON" : "OFF"}`);
-        })
-        .catch((error) => {
-            alert("ERROR updating maintenance mode. Check console for details.");
-            console.error("Firebase Maintenance Error: ", error);
-        });
-    }
-
-    // 5. Nuke Chat (Removes all messages from the database)
-    function nukeChat() {
-        if(confirm("WARNING: This will attempt to delete ALL chat history. Continue?")) {
-            // Clears all rooms and all messages within them.
-            db.ref('rooms').remove() 
-            .then(() => {
-                alert("Chat Clear attempt initiated. All room history has been deleted.");
-            })
-            .catch((error) => {
-                alert("ERROR clearing chat. Check console for details.");
-                console.error("Firebase Nuke Error: ", error);
-            });
-        }
-    }
-
-    // 6. Pinned Message
-    function setPin() {
-        const pinMsg = document.getElementById('pinMsg').value;
-        db.ref('settings/pinned_message').set(pinMsg)
-        .then(() => {
-            alert("Message Pinned: " + pinMsg);
-        })
-        .catch((error) => {
-            alert("ERROR pinning message. Check console for details.");
-            console.error("Firebase Pin Error: ", error);
-        });
-    }
-
-    // 7. Bad Word Filter
-    function addBadWord() {
-        const badWord = document.getElementById('badWord').value.trim().toLowerCase();
-        if (badWord) {
-            db.ref('settings/blocked_words').child(badWord).set(true)
-            .then(() => {
-                alert(`'${badWord}' added to the blocked list.`);
-                document.getElementById('badWord').value = '';
-            })
-            .catch((error) => {
-                alert("ERROR adding bad word. Check console for details.");
-                console.error("Firebase Bad Word Error: ", error);
-            });
-        }
-    }
-
-    // 8. Export Chat (Placeholder)
-    function exportChat() {
-        alert("Preparing chat history for download... (Logic needs to be added here)");
-    }
-</script>
-
-</body>
-</html>
+        .msg-content { max-width: 80%; }
+        .msg-info { font-size: 11px; color: var(--secondary-text); margin-bottom: 2px; margin-left: 2px; }
+        .msg-text { background: var(--msg-bg); color: var(--msg-text); padding: 8px 12px; border-radius: 15px; font-size:
