@@ -160,9 +160,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
         import { getDatabase, ref, push, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
-        // ----------------------------------------------------
-        // 🔑 CRITICAL: ENSURE THESE CREDENTIALS ARE CORRECT
-        // ----------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
             authDomain: "mypersonalchatboxapp.firebaseapp.com",
@@ -184,7 +181,7 @@
         let currentRoomName = "";
         let currentAvatarStyle = "adventurer";
         let typingTimeout;
-        let blockedWords = []; 
+        let blockedWords = []; // List of words to block
         
         const loginNameInput = document.getElementById("loginNameInput");
         const loginPassInput = document.getElementById("loginPassInput");
@@ -218,20 +215,20 @@
             const userRef = ref(db, 'users/' + name);
             const settingsRef = ref(db, 'settings');
 
-            // 1. Check Maintenance Mode first (read global setting)
-            // Use onValue with { onlyOnce: true } to check the current state immediately
+            // 1. Check Maintenance Mode
             onValue(ref(settingsRef, 'maintenance_mode'), (maintenanceSnapshot) => {
                 if (maintenanceSnapshot.val() === true) {
                     loginScreen.style.display = "none";
                     maintenanceOverlay.style.display = "flex";
-                    return; 
+                    return; // Stop the process
                 }
                 
-                // 2. Check Ban Status (read user-specific setting)
+                // If not in maintenance, proceed to ban check
+                // 2. Check Ban Status
                 onValue(ref(userRef, 'banned'), (banSnapshot) => {
                     if (banSnapshot.val() === true) {
                         alert("❌ Your account has been banned by the Administrator.");
-                        return; 
+                        return; // Stop the process
                     }
                     
                     // 3. If clear, proceed to chat session
@@ -259,7 +256,7 @@
 
             loadMessages();
             setupTypingListener();
-            setupAdminListeners(); // Start listening for admin commands
+            setupAdminListeners(); // NEW: Start listening for admin commands
         }
         
         // --- LOAD MESSAGES ---
@@ -295,7 +292,7 @@
             });
         }
 
-        // --- ADMIN LISTENERS (Reads commands from Admin Panel) ---
+        // --- ADMIN LISTENERS (NEW) ---
         function setupAdminListeners() {
             const settingsRef = ref(db, 'settings');
 
@@ -320,7 +317,6 @@
                     const lastAlertKey = alertKeys[alertKeys.length - 1];
                     const lastAlert = alerts[lastAlertKey];
                     
-                    // Check if the user has already seen this specific alert (using sessionStorage)
                     if (!sessionStorage.getItem('lastAlertTimestamp') || sessionStorage.getItem('lastAlertTimestamp') < lastAlert.timestamp) {
                         alert(`🚨 NEW SYSTEM ALERT: ${lastAlert.message}`);
                         sessionStorage.setItem('lastAlertTimestamp', lastAlert.timestamp);
@@ -338,6 +334,7 @@
             // D. Listen for Maintenance Mode changes (in case admin toggles it while user is logged in)
             onValue(ref(settingsRef, 'maintenance_mode'), (snapshot) => {
                 if (snapshot.val() === true) {
+                    // If maintenance turns on, force user out
                     alert("The Administrator has initiated Maintenance Mode. You will be logged out.");
                     window.location.reload(); 
                 }
@@ -348,7 +345,7 @@
         window.sendMessage = function() {
             const text = messageInput.value;
 
-            // 1. Check for blocked words before sending
+            // 1. Check for blocked words
             const lowerText = text.toLowerCase();
             const foundBlockedWord = blockedWords.find(word => lowerText.includes(word));
 
