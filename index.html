@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Chat + Avatars</title>
+    <title>Secure Chat</title>
     <style>
         /* --- THEME VARIABLES --- */
         :root {
@@ -11,21 +11,19 @@
             --secondary-text: #65676b; --input-bg: #f0f2f5; --msg-bg: #f0f2f5;
             --msg-text: #050505; --header-border: #e5e5e5; --accent-color: #764ba2;
             --emoji-bg: #ffffff; --emoji-border: #ddd;
-            --alert-bg: #ffdddd;
         }
         [data-theme="dark"] {
             --bg-color: #18191a; --chat-bg: #242526; --text-color: #e4e6eb;
             --secondary-text: #b0b3b8; --input-bg: #3a3b3c; --msg-bg: #3a3b3c;
             --msg-text: #e4e6eb; --header-border: #3e4042; --accent-color: #a270d6;
             --emoji-bg: #2d2d2d; --emoji-border: #444;
-            --alert-bg: #764ba2;
         }
 
         html, body { height: 100%; margin: 0; overflow: hidden; }
         
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2); /* Set a fallback for login screen background */
+            background: linear-gradient(135deg, #667eea, #764ba2);
             height: 100dvh; 
         }
 
@@ -52,16 +50,20 @@
         header { background-color: var(--chat-bg); padding: 10px 15px; border-bottom: 1px solid var(--header-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         h2 { margin: 0; font-size: 16px; color: var(--text-color); }
         .room-badge { background: var(--accent-color); color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px;}
-        .header-controls button, .about-btn { background: transparent; border: 1px solid var(--secondary-text); color: var(--text-color); padding: 4px 8px; border-radius: 15px; cursor: pointer; margin-left: 5px; font-size: 12px; }
-        .about-btn { text-decoration: none; display: inline-block; }
-
-        /* Pinned Message Style */
-        #pinned-message { background: var(--alert-bg); color: var(--text-color); padding: 8px 15px; font-size: 13px; text-align: center; border-bottom: 1px solid var(--header-border); display: none; }
+        
+        /* HEADER BUTTONS */
+        .header-controls { display: flex; gap: 5px; align-items: center; }
+        .nav-btn { 
+            background: transparent; border: 1px solid var(--secondary-text); color: var(--text-color); 
+            padding: 4px 8px; border-radius: 15px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block;
+        }
+        .nav-btn:hover { background: rgba(0,0,0,0.05); }
+        .delete-btn { border-color: #ff4444; color: #ff4444; }
+        .delete-btn:hover { background: #ff4444; color: white; }
 
         #messages { flex: 1; padding: 15px; overflow-y: scroll; background-color: var(--chat-bg); display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; }
         .msg { display: flex; align-items: flex-start; animation: fadeIn 0.3s ease; cursor: pointer; }
         
-        /* NEW AVATAR STYLE */
         .msg-avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; background: #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
         .msg-content { max-width: 80%; }
@@ -73,7 +75,6 @@
         .msg-image { max-width: 100%; border-radius: 12px; margin-top: 5px; }
 
         #typing-bar { padding: 2px 15px; font-size: 12px; color: var(--accent-color); font-style: italic; min-height: 18px; background: var(--chat-bg); opacity: 0; transition: opacity 0.3s; }
-        #maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); color: white; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; z-index: 1001; }
         .input-area { 
             padding: 10px; background: var(--chat-bg); border-top: 1px solid var(--header-border); 
             display: flex; gap: 8px; align-items: center; padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; position: relative;
@@ -84,7 +85,6 @@
         /* EMOJI PICKER */
         #emojiBtn { cursor: pointer; font-size: 22px; background: none; border: none; padding: 0 5px; filter: grayscale(100%); transition: 0.2s; }
         #emojiBtn:hover { filter: grayscale(0%); transform: scale(1.1); }
-        
         #emojiPicker {
             position: absolute; bottom: 70px; left: 10px; width: 250px; height: 200px;
             background: var(--emoji-bg); border: 1px solid var(--emoji-border); border-radius: 10px;
@@ -99,15 +99,9 @@
 </head>
 <body>
 
-    <div id="maintenance-overlay">
-        <h1>🛠️ System Maintenance 🛠️</h1>
-        <p>The chat room is currently closed for maintenance and updates by the Administrator.</p>
-        <p style="font-size: 1.2em; margin-top: 20px;">Please check back later!</p>
-    </div>
-
     <div id="login-screen">
         <div class="login-card">
-            <h2>Join Chat</h2>
+            <h2>Login</h2>
             <input type="text" id="loginNameInput" class="login-input" placeholder="Your Name" autocomplete="off">
             <input type="password" id="loginPassInput" class="login-input" placeholder="Password (12345)">
             
@@ -121,10 +115,9 @@
             <select id="roomSelect" class="room-select">
                 <option value="general">🏠 General Chat</option>
                 <option value="tech">💻 Tech Talk</option>
-                <option value="it">🔌 IT Support</option>
                 <option value="gaming">🎮 Gaming</option>
             </select>
-            <button class="login-btn" onclick="attemptLogin()">Join Room</button>
+            <button class="login-btn" onclick="attemptLogin()">Enter Room</button>
         </div>
     </div>
 
@@ -135,13 +128,11 @@
                 <span id="currentRoomBadge" class="room-badge">General</span>
             </div>
             <div class="header-controls">
-                <a href="about.html" style="text-decoration:none;"><button class="about-btn">ℹ️</button></a>
-                <button onclick="toggleTheme()" id="themeBtn">🌙</button>
-                <button onclick="clearChat()" style="color:#dc3545; border-color:#dc3545">🗑️</button>
+                <a href="about.html" class="nav-btn" target="_blank">ℹ️ About</a>
+                <button onclick="clearChat()" class="nav-btn delete-btn">🗑️</button>
+                <button onclick="toggleTheme()" class="nav-btn" id="themeBtn">🌙</button>
             </div>
         </header>
-
-        <div id="pinned-message"></div>
 
         <div id="messages"></div>
         <div id="typing-bar">Someone is typing...</div>
@@ -158,12 +149,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
-        // Corrected Firebase imports to include 'get'
-        import { getDatabase, ref, push, onValue, set, remove, onDisconnect, get } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, set, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
 
-        // ----------------------------------------------------
-        // 🔑 CRITICAL: ENSURE THESE CREDENTIALS ARE CORRECT
-        // ----------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyDyOcdbasPRMo8FHxOyLw0WnmhkwOSGF8o",
             authDomain: "mypersonalchatboxapp.firebaseapp.com",
@@ -178,85 +165,53 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const sound = new Audio("https://www.soundjay.com/buttons/sounds/button-16.mp3");
-        // The Password is hardcoded here
-        const ROOM_PASSWORD = "12345"; 
         
+        // --- CONFIGURATION ---
+        const ROOM_PASSWORD = "12345"; // Change this to set your password
+
         let activeChatRef, typingRef; 
         let currentUser = "";
         let currentRoomName = "";
         let currentAvatarStyle = "adventurer";
         let typingTimeout;
-        let blockedWords = []; 
         
         const loginNameInput = document.getElementById("loginNameInput");
         const loginPassInput = document.getElementById("loginPassInput");
         const roomSelect = document.getElementById("roomSelect");
         const chatInterface = document.getElementById("chatInterface");
         const loginScreen = document.getElementById("login-screen");
-        const maintenanceOverlay = document.getElementById("maintenance-overlay");
         const messageInput = document.getElementById("messageInput");
 
-        // Auto-fill name
+        // Auto-fill name from last time
         const savedName = localStorage.getItem("chatUsername");
         if(savedName) loginNameInput.value = savedName;
 
-        // --- AVATAR SELECTION LOGIC ---
         window.selectStyle = function(style, element) {
             currentAvatarStyle = style;
             document.querySelectorAll('.avatar-option').forEach(img => img.classList.remove('selected'));
             element.classList.add('selected');
         }
 
-        // --- ATTEMPT LOGIN (Enforces Ban and Maintenance Mode) ---
+        // --- LOGIN WITH PASSWORD ---
         window.attemptLogin = function() {
             const name = loginNameInput.value.trim();
             const pass = loginPassInput.value.trim();
             const room = roomSelect.value;
 
-            if(!name) return alert("Name required!");
-            // Password Check
-            if(pass !== ROOM_PASSWORD) return alert("Wrong Password!");
+            if(!name) {
+                alert("Please enter your name!");
+                return;
+            }
 
-            // Reference to user data and global settings
-            const userRef = ref(db, 'users/' + name);
-            const settingsRef = ref(db, 'settings');
+            // 2. Check Password
+            if(pass !== ROOM_PASSWORD) {
+                alert("Incorrect Password! Access Denied.");
+                return;
+            }
 
-            // 1. Check Maintenance Mode
-            get(ref(settingsRef, 'maintenance_mode')).then((maintenanceSnapshot) => {
-                if (maintenanceSnapshot.exists() && maintenanceSnapshot.val() === true) {
-                    loginScreen.style.display = "none";
-                    maintenanceOverlay.style.display = "flex";
-                    return; 
-                }
-                
-                // 2. Check Ban Status
-                get(ref(userRef, 'banned')).then((banSnapshot) => {
-                    if (banSnapshot.exists() && banSnapshot.val() === true) {
-                        alert("❌ Your account has been banned by the Administrator.");
-                        return; 
-                    }
-                    
-                    // 3. If clear, proceed to chat session
-                    startChatSession(name, room);
-                }).catch((error) => {
-                    console.error("Ban check failed (may be expected if no user data exists):", error);
-                    // Fallback to allow login if the database lookup fails or paths are empty
-                    startChatSession(name, room); 
-                });
-            }).catch((error) => {
-                console.error("Maintenance check failed (may be expected if no settings data exists):", error);
-                 // Fallback to allow login if the database lookup fails or paths are empty
-                 get(ref(userRef, 'banned')).then((banSnapshot) => {
-                     if (banSnapshot.exists() && banSnapshot.val() === true) {
-                         alert("❌ Your account has been banned by the Administrator.");
-                         return; 
-                     }
-                     startChatSession(name, room);
-                   }).catch(() => startChatSession(name, room));
-            });
+            startChatSession(name, room);
         }
         
-        // --- START CHAT SESSION ---
         function startChatSession(name, room) {
             currentUser = name;
             localStorage.setItem("chatUsername", name);
@@ -275,10 +230,19 @@
 
             loadMessages();
             setupTypingListener();
-            setupAdminListeners();
+        }
+
+        // --- CLEAR CHAT FUNCTION ---
+        window.clearChat = function() {
+            const confirmPass = prompt("Enter Password to Clear Chat:");
+            if(confirmPass === ROOM_PASSWORD) {
+                set(activeChatRef, null);
+                alert("Chat history cleared!");
+            } else {
+                alert("Wrong password!");
+            }
         }
         
-        // --- LOAD MESSAGES ---
         function loadMessages() {
             onValue(activeChatRef, (snapshot) => {
                 const msgBox = document.getElementById("messages");
@@ -294,8 +258,6 @@
 
                         const newMsg = document.createElement('div');
                         newMsg.className = 'msg';
-                        newMsg.ondblclick = () => deleteMessage(key); 
-                        
                         newMsg.innerHTML = `
                             <img src="${avatarSrc}" class="msg-avatar">
                             <div class="msg-content">
@@ -311,71 +273,10 @@
             });
         }
 
-        // --- ADMIN LISTENERS ---
-        function setupAdminListeners() {
-            const settingsRef = ref(db, 'settings');
-
-            // A. Listen for Pinned Message updates
-            onValue(ref(settingsRef, 'pinned_message'), (snapshot) => {
-                const pinnedMsg = snapshot.val();
-                const pinnedDiv = document.getElementById('pinned-message');
-                if (pinnedMsg && pinnedMsg.trim() !== '') {
-                    pinnedDiv.innerText = `📌 ${pinnedMsg}`;
-                    pinnedDiv.style.display = 'block';
-                } else {
-                    pinnedDiv.style.display = 'none';
-                }
-            });
-
-            // B. Listen for System Alerts
-            onValue(ref(db, 'alerts'), (snapshot) => {
-                const alerts = snapshot.val();
-                if (alerts) {
-                    const alertKeys = Object.keys(alerts);
-                    const lastAlertKey = alertKeys[alertKeys.length - 1];
-                    const lastAlert = alerts[lastAlertKey];
-                    
-                    if (!sessionStorage.getItem('lastAlertTimestamp') || sessionStorage.getItem('lastAlertTimestamp') < lastAlert.timestamp) {
-                        alert(`🚨 NEW SYSTEM ALERT: ${lastAlert.message}`);
-                        sessionStorage.setItem('lastAlertTimestamp', lastAlert.timestamp);
-                    }
-                }
-            });
-
-            // C. Listen for Blocked Words
-            onValue(ref(settingsRef, 'blocked_words'), (snapshot) => {
-                const wordsObject = snapshot.val();
-                blockedWords = Object.keys(wordsObject || {});
-                console.log("Blocked words updated:", blockedWords);
-            });
-
-            // D. Listen for Maintenance Mode changes (in case admin toggles it while user is logged in)
-            onValue(ref(settingsRef, 'maintenance_mode'), (snapshot) => {
-                if (snapshot.val() === true) {
-                    alert("The Administrator has initiated Maintenance Mode. You will be logged out.");
-                    window.location.reload(); 
-                }
-            });
-        }
-
-        // --- SEND MESSAGE (Enforces Word Block) ---
         window.sendMessage = function() {
             const text = messageInput.value;
-
-            // 1. Check for blocked words before sending
-            const lowerText = text.toLowerCase();
-            const foundBlockedWord = blockedWords.find(word => lowerText.includes(word));
-
-            if (foundBlockedWord) {
-                alert(`🚫 Message blocked! The word "${foundBlockedWord}" is not allowed.`);
-                messageInput.value = "";
-                return;
-            }
-            
-            // 2. Proceed if not blocked
             if(text.trim() !== "") {
                 const myAvatarUrl = `https://api.dicebear.com/9.x/${currentAvatarStyle}/svg?seed=${currentUser}`;
-
                 push(activeChatRef, {
                     name: currentUser,
                     message: text,
@@ -437,21 +338,6 @@
             } else { body.setAttribute("data-theme", "dark"); btn.innerText = "☀️"; }
         }
 
-        window.deleteMessage = function(messageId) {
-            if(confirm("Delete this message?")) {
-                const password = prompt("Enter Password:");
-                if(password === ROOM_PASSWORD) {
-                    remove(ref(db, 'rooms/' + currentRoomName + '/messages/' + messageId));
-                } else { alert("Wrong password"); }
-            }
-        }
-
-        window.clearChat = function() {
-            const password = prompt("ADMIN: Clear ALL messages in this room?");
-            if(password === ROOM_PASSWORD) { set(activeChatRef, null); } 
-            else if (password !== null) { alert("Wrong Password"); }
-        }
-
         function formatMessage(text) {
             text = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
             text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
@@ -459,7 +345,6 @@
             return text;
         }
 
-        // --- EMOJI PICKER LOGIC ---
         const emojiList = ["😀","😁","😂","🤣","😉","😊","😍","🤩","😎","🤔","🤨","😐","🙄","😴","🤢","🤮","🤧","😷","🤯","🥳","🔥","✨","❤️","👍","👎","👋","🙏","💪","👀","🎉"];
         const picker = document.getElementById("emojiPicker");
         emojiList.forEach(emoji => {
